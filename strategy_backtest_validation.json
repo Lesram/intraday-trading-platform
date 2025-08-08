@@ -1,0 +1,140 @@
+{
+  "timestamp": "2025-08-08T13:03:37.587400",
+  "validation_type": "STRATEGY_BACKTESTING_VALIDATION",
+  "strategies_tested": {
+    "automated_signal_trading": {
+      "strategy": "automated_signal_trading",
+      "symbol": "AAPL",
+      "backtest_period": "252 days (simulated)",
+      "total_return": "9.32%",
+      "annualized_volatility": "37.80%",
+      "sharpe_ratio": "0.42",
+      "max_drawdown": "-32.96%",
+      "calmar_ratio": "0.28",
+      "sortino_ratio": "0.78",
+      "win_rate": "52.8%",
+      "total_trades": 193,
+      "avg_trade_return": "0.03%",
+      "performance_grade": "F (Failing)",
+      "config_used": {
+        "name": "automated_signal_trading",
+        "confidence_threshold": 0.75,
+        "symbols": [
+          "MSFT",
+          "NVDA",
+          "META",
+          "NFLX"
+        ],
+        "position_sizing": "kelly_fraction",
+        "stop_loss": null,
+        "take_profit": null
+      }
+    },
+    "momentum_strategy": {
+      "strategy": "momentum_strategy",
+      "symbol": "AAPL",
+      "backtest_period": "252 days (simulated)",
+      "total_return": "-5.92%",
+      "annualized_volatility": "34.60%",
+      "sharpe_ratio": "-0.00",
+      "max_drawdown": "-35.42%",
+      "calmar_ratio": "-0.17",
+      "sortino_ratio": "-0.01",
+      "win_rate": "52.0%",
+      "total_trades": 193,
+      "avg_trade_return": "-0.05%",
+      "performance_grade": "F (Failing)",
+      "config_used": {
+        "name": "momentum_strategy",
+        "price_momentum_threshold": 0.02,
+        "volume_momentum_threshold": 1.5,
+        "timeframe": "15Min",
+        "lookback_periods": 4,
+        "stop_loss": -0.015,
+        "symbols": [
+          "AAPL",
+          "MSFT",
+          "GOOGL",
+          "TSLA",
+          "NVDA"
+        ]
+      }
+    },
+    "mean_reversion_strategy": {
+      "strategy": "mean_reversion_strategy",
+      "symbol": "SPY",
+      "backtest_period": "252 days (simulated)",
+      "total_return": "11.16%",
+      "annualized_volatility": "29.51%",
+      "sharpe_ratio": "0.51",
+      "max_drawdown": "-25.33%",
+      "calmar_ratio": "0.44",
+      "sortino_ratio": "0.88",
+      "win_rate": "49.2%",
+      "total_trades": 176,
+      "avg_trade_return": "0.10%",
+      "performance_grade": "F (Failing)",
+      "config_used": {
+        "name": "mean_reversion_strategy",
+        "bollinger_periods": 20,
+        "bollinger_std": 2.0,
+        "timeframe": "30Min",
+        "profit_target": 0.02,
+        "symbols": [
+          "SPY",
+          "QQQ",
+          "IWM",
+          "AAPL",
+          "MSFT"
+        ]
+      }
+    },
+    "portfolio_rebalancing": {
+      "strategy": "portfolio_rebalancing",
+      "symbol": "Multi-Asset Portfolio",
+      "target_allocation": {
+        "SPY": 0.3,
+        "QQQ": 0.25,
+        "AAPL": 0.15,
+        "MSFT": 0.15,
+        "CASH": 0.15
+      },
+      "total_return": "18.10%",
+      "annualized_volatility": "14.40%",
+      "sharpe_ratio": "1.23",
+      "max_drawdown": "-10.89%",
+      "rebalancing_benefit": "Reduced portfolio volatility through diversification",
+      "performance_grade": "C (Fair)"
+    }
+  },
+  "comparative_analysis": {
+    "best_total_return": {
+      "strategy": "mean_reversion_strategy",
+      "value": 0.1116
+    },
+    "best_sharpe_ratio": {
+      "strategy": "mean_reversion_strategy",
+      "value": 0.51
+    },
+    "lowest_drawdown": {
+      "strategy": "",
+      "value": 0
+    },
+    "highest_win_rate": {
+      "strategy": "automated_signal_trading",
+      "value": 0.528
+    },
+    "strategy_rankings": {}
+  },
+  "recommendations": [
+    "IMMEDIATE ACTIONS BASED ON BACKTESTING:",
+    "1. Implement stop-loss mechanisms for all strategies",
+    "2. Add position sizing optimization based on volatility",
+    "3. Implement regime detection to avoid unfavorable market conditions",
+    "4. Add correlation monitoring to prevent over-concentration",
+    "6. Optimize parameters for automated_signal_trading (current grade: F (Failing))",
+    "6. Optimize parameters for momentum_strategy (current grade: F (Failing))",
+    "6. Optimize parameters for mean_reversion_strategy (current grade: F (Failing))",
+    "6. Optimize parameters for portfolio_rebalancing (current grade: C (Fair))"
+  ]
+}
