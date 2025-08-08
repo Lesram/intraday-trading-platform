@@ -37,7 +37,7 @@ from volatility_adjusted_position_sizing import initialize_volatility_sizer, get
 from dynamic_stop_loss_manager import initialize_dynamic_stops, create_stops_for_position, monitor_stops
 from performance_monitor import initialize_performance_monitor, get_current_metrics, should_halt_trading
 from multi_timeframe_analyzer import initialize_multi_timeframe_analyzer, multi_tf_analyzer
-from advanced_ml_predictor import initialize_advanced_predictor, advanced_predictor
+from advanced_ml_predictor import initialize_advanced_predictor, get_advanced_predictor
 from advanced_dynamic_stop_optimizer import (initialize_advanced_stop_optimizer, 
                                             create_optimized_stops_for_position,
                                             monitor_advanced_stops, get_advanced_stop_status)
@@ -283,6 +283,8 @@ class TradingSignalResponse(BaseModel):
     kelly_fraction: Optional[float]
     signal_strength: str
     risk_reward_ratio: Optional[float]
+    # ML ensemble predictions
+    ensemble_prediction: Optional[dict] = None
 
 class TradeLogResponse(BaseModel):
     timestamp: str
@@ -599,7 +601,8 @@ async def get_health_status():
                 
                 # Method 2: Try to verify with advanced_predictor if available  
                 try:
-                    if advanced_predictor and hasattr(advanced_predictor, 'models'):
+                    predictor = get_advanced_predictor()
+                    if predictor and hasattr(predictor, 'models'):
                         logger.info("🔍 Testing ML predictor directly")
                         # Test ML predictor with real market data instead of fake values
                         test_bars = alpaca_client.get_market_data('SPY', timeframe="1Min", limit=5)
@@ -624,10 +627,10 @@ async def get_health_status():
                                 'vix_proxy': get_current_vix(alpaca_client), # Real VIX via Alpaca
                                 'market_trend': 0.01
                             }
-                        ml_result = advanced_predictor.predict_with_ensemble(market_data)
+                        ml_result = predictor.predict_with_ensemble(market_data)
                         if ml_result and isinstance(ml_result, dict):
                             # Prediction successful - ML is definitely working
-                            ml_models_loaded = len([m for m in advanced_predictor.models.values() if m is not None])
+                            ml_models_loaded = len([m for m in predictor.models.values() if m is not None])
                             logger.info(f"✅ ML predictor test successful, {ml_models_loaded} models active")
                         else:
                             logger.warning("⚠️ ML predictor test failed, but files exist")
@@ -1319,16 +1322,33 @@ async def get_trading_signals(limit: int = 5):
                         'market_trend': price_change
                     }
                     
-                    if advanced_predictor:
-                        ml_result = advanced_predictor.predict_with_ensemble(market_data)
-                        ml_confidence = ml_result.get('confidence', 0.5)
-                        ml_direction = ml_result.get('prediction', 'neutral')
-                        model_ensemble = ml_result.get('ensemble_weights', {})
+                    predictor = get_advanced_predictor()
+                    if predictor:
+                        ml_result_raw = predictor.predict_with_ensemble(market_data)
+                        ml_confidence = ml_result_raw.get('confidence', 0.5)
+                        
+                        # Convert ensemble prediction number to direction string
+                        ensemble_pred = ml_result_raw.get('ensemble_prediction', 0.5)
+                        if ensemble_pred > 0.65:
+                            ml_direction = 'strong_buy'
+                        elif ensemble_pred > 0.55:
+                            ml_direction = 'buy'
+                        elif ensemble_pred < 0.35:
+                            ml_direction = 'strong_sell'
+                        elif ensemble_pred < 0.45:
+                            ml_direction = 'sell'
+                        else:
+                            ml_direction = 'neutral'
+                        
+                        model_ensemble = ml_result_raw.get('model_weights', {})
+                        individual_preds = ml_result_raw.get('individual_predictions', {})
                     else:
-                        ml_result = {'confidence': 0.5, 'prediction': 'neutral', 'ensemble_weights': {}}
+                        ml_result_raw = {'confidence': 0.5, 'ensemble_prediction': 0.5, 'model_weights': {}}
+                        ensemble_pred = 0.5
                         ml_confidence = 0.5
                         ml_direction = 'neutral'
                         model_ensemble = {}
+                        individual_preds = {}
                     
                     logger.info(f"🤖 {symbol} ML Prediction: Direction={ml_direction}, Confidence={ml_confidence:.2f}")
                 except Exception as e:
@@ -1483,7 +1503,13 @@ async def get_trading_signals(limit: int = 5):
                         sentiment_score=sentiment_score,
                         kelly_fraction=kelly_fraction,
                         signal_strength=signal_strength,
-                        risk_reward_ratio=risk_reward
+                        risk_reward_ratio=risk_reward,
+                        ensemble_prediction={
+                            "final": ensemble_pred,
+                            "lstm": individual_preds.get('lstm', 0.5),
+                            "xgboost": individual_preds.get('xgb', 0.5),
+                            "rf": individual_preds.get('rf', 0.5)
+                        }
                     )
                     
                     signals.append(signal_data)
@@ -1881,8 +1907,38 @@ async def get_ml_prediction_analysis(symbol: str):
         }
         
         # Get ML prediction
-        if advanced_predictor:
-            ml_result = advanced_predictor.predict_with_ensemble(market_data)
+        predictor = get_advanced_predictor()
+        if predictor:
+            ml_result_raw = predictor.predict_with_ensemble(market_data)
+            
+            # Transform the ML result to match expected API format
+            ensemble_pred = ml_result_raw.get('ensemble_prediction', 0.5)
+            individual_preds = ml_result_raw.get('individual_predictions', {})
+            confidence = ml_result_raw.get('confidence', 0.5)
+            
+            # Convert numeric prediction to signal
+            if ensemble_pred > 0.6:
+                signal_str = 'BUY'
+                recommendation = 'buy'
+            elif ensemble_pred < 0.4:
+                signal_str = 'SELL'  
+                recommendation = 'sell'
+            else:
+                signal_str = 'FLAT'
+                recommendation = 'hold'
+            
+            ml_result = {
+                'prediction': signal_str,
+                'confidence': confidence,
+                'ensemble_prediction': ensemble_pred,
+                'individual_predictions': individual_preds,
+                'ensemble_weights': ml_result_raw.get('model_weights', {}),
+                'model_performance': {},
+                'feature_importance': {},
+                'prediction_horizon': '15min',
+                'risk_score': 1.0 - confidence,  # Higher uncertainty = higher risk
+                'recommendation': recommendation
+            }
         else:
             ml_result = {
                 'prediction': 'neutral',

@@ -42,6 +42,7 @@ import {
   Timeline
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { TradingApiService } from '../services/api';
 import SimpleMarketTiming from './SimpleMarketTiming';
 
 interface TradingSignal {
@@ -99,74 +100,78 @@ const ProfessionalTradingInterface: React.FC = () => {
     { time: '11:30', price: 178.25 }
   ]);
 
-  // Sample data
-  // Add market timing state with current time
-  const [marketInfo] = useState({
+  // Real market timing data
+  const [marketInfo, setMarketInfo] = useState({
     is_open: false,
-    status: 'CLOSED' as const,
-    data_type: 'LAST_AVAILABLE' as const,
+    status: 'CLOSED',
+    data_type: 'LAST_AVAILABLE',
     local_time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
     eastern_time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/New_York' }) + ' ET',
     date: new Date().toLocaleDateString()
   });
 
+  // Load real trading data
   useEffect(() => {
-    setCurrentSignals([
-      {
-        symbol: 'AAPL',
-        signal: 0.75,
-        confidence: 0.85,
-        recommendation: 'BUY',
-        risk_score: 0.25,
-        timestamp: new Date().toISOString()
-      },
-      {
-        symbol: 'MSFT',
-        signal: 0.45,
-        confidence: 0.72,
-        recommendation: 'BUY',
-        risk_score: 0.18,
-        timestamp: new Date().toISOString()
-      },
-      {
-        symbol: 'TSLA',
-        signal: -0.35,
-        confidence: 0.68,
-        recommendation: 'SELL',
-        risk_score: 0.55,
-        timestamp: new Date().toISOString()
-      }
-    ]);
+    const loadTradingData = async () => {
+      try {
+        // Load real signals from API
+        const signalsResponse = await TradingApiService.getTradingSignals();
+        if (signalsResponse && signalsResponse.length > 0) {
+          const formattedSignals = signalsResponse.slice(0, 10).map((signal: any) => ({
+            symbol: signal.symbol,
+            signal: signal.ensemble_prediction?.final || 0.5,
+            confidence: signal.confidence,
+            recommendation: signal.signal,
+            risk_score: signal.risk_metrics?.var_95 || 0,
+            timestamp: signal.timestamp
+          }));
+          setCurrentSignals(formattedSignals);
+        }
 
-    setPositions([
-      {
-        symbol: 'AAPL',
-        quantity: 100,
-        avg_price: 175.50,
-        current_price: 178.25,
-        unrealized_pnl: 275.00,
-        unrealized_pnl_pct: 1.57,
-        market_value: 17825
-      },
-      {
-        symbol: 'MSFT',
-        quantity: 75,
-        avg_price: 340.20,
-        current_price: 345.80,
-        unrealized_pnl: 420.00,
-        unrealized_pnl_pct: 1.65,
-        market_value: 25935
-      },
-      {
-        symbol: 'TSLA',
-        quantity: 50,
-        avg_price: 220.15,
-        current_price: 215.30,
-        unrealized_pnl: -242.50,
-        unrealized_pnl_pct: -2.20,
-        market_value: 10765
+        // Load real positions from API
+        const positionsResponse = await TradingApiService.getPositions();
+        if (positionsResponse && positionsResponse.length > 0) {
+          const formattedPositions = positionsResponse.map((pos: any) => ({
+            symbol: pos.symbol,
+            quantity: parseInt(pos.qty) || 0,
+            avg_price: parseFloat(pos.avg_entry_price) || 0,
+            current_price: parseFloat(pos.market_value) / parseFloat(pos.qty) || 0,
+            unrealized_pnl: parseFloat(pos.unrealized_pl) || 0,
+            unrealized_pnl_pct: parseFloat(pos.unrealized_plpc) * 100 || 0,
+            market_value: parseFloat(pos.market_value) || 0
+          }));
+          setPositions(formattedPositions);
+        }
+
+        // Update market timing with current time (could be enhanced with real market status API)
+        const currentTime = new Date();
+        const easternTime = new Date().toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit', 
+          hour12: true, 
+          timeZone: 'America/New_York' 
+        });
+        
+        setMarketInfo({
+          is_open: currentTime.getHours() >= 9 && currentTime.getHours() < 16, // Basic market hours check
+          status: (currentTime.getHours() >= 9 && currentTime.getHours() < 16) ? 'OPEN' : 'CLOSED',
+          data_type: 'LIVE',
+          local_time: currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          eastern_time: easternTime + ' ET',
+          date: currentTime.toLocaleDateString()
+        });
+
+      } catch (error) {
+        console.error('Failed to load trading data:', error);
+        // Keep existing sample data as fallback
       }
-    ]);
+    };
+
+    loadTradingData();
+    
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(loadTradingData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handlePlaceOrder = () => {
