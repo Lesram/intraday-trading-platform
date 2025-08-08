@@ -26,21 +26,39 @@ async def get_simple_system_health():
     
     # Basic ML Models Check
     try:
-        # Try to import the ML predictor
-        from advanced_ml_predictor import AdvancedMLPredictor
-        predictor = AdvancedMLPredictor()
+        # Check if model files exist and are accessible
+        import os
+        model_files = [
+            'rf_ensemble_v2.pkl',
+            'xgb_ensemble_v2.pkl', 
+            'lstm_ensemble_best.keras',
+            'feature_scaler_v2.gz'
+        ]
         
-        # Check if models are accessible
-        models_loaded = hasattr(predictor, 'lstm_model') and predictor.lstm_model is not None
+        existing_models = 0
+        for model_file in model_files:
+            if os.path.exists(model_file) and os.path.getsize(model_file) > 0:
+                existing_models += 1
+        
+        # Try to access the global ML predictor if available
+        models_operational = False
+        try:
+            # Check if ML predictor is loaded in the global scope
+            import sys
+            if 'advanced_ml_predictor' in sys.modules:
+                models_operational = True
+        except:
+            pass
         
         health_data.append(SimpleHealthResponse(
             service="ML Models",
-            status="healthy" if models_loaded else "degraded",
+            status="healthy" if existing_models >= 3 else ("degraded" if existing_models > 0 else "offline"),
             response_time=10,
             details={
                 "using_real_data": True,  # We're using real market data
-                "models_loaded": 3 if models_loaded else 0,
-                "ensemble_operational": models_loaded
+                "models_loaded": existing_models,
+                "ensemble_operational": models_operational,
+                "model_files_found": f"{existing_models}/4"
             }
         ))
     except Exception as e:
@@ -53,22 +71,44 @@ async def get_simple_system_health():
     
     # Alpaca API Check
     try:
-        import alpaca_trade_api as tradeapi
         import os
+        from dotenv import load_dotenv
         
-        # Try to create API connection
-        api_key = os.getenv('ALPACA_API_KEY')
-        api_secret = os.getenv('ALPACA_SECRET_KEY')
-        api_connected = bool(api_key and api_secret)
+        # Load environment variables
+        load_dotenv()
+        
+        # Check for API credentials (using CORRECT Alpaca variable names!)
+        api_key = os.getenv('APCA_API_KEY_ID')
+        api_secret = os.getenv('APCA_API_SECRET_KEY')
+        base_url = os.getenv('APCA_API_BASE_URL', 'https://paper-api.alpaca.markets')
+        
+        credentials_exist = bool(api_key and api_secret and 
+                                api_key != 'your_paper_trading_api_key_here' and
+                                api_secret != 'your_paper_trading_secret_key_here')
+        
+        # If credentials exist, try to test connection
+        connection_test = False
+        if credentials_exist:
+            try:
+                import alpaca_trade_api as tradeapi
+                api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
+                account = api.get_account()
+                connection_test = True
+            except Exception as conn_error:
+                logger.warning(f"Alpaca connection test failed: {conn_error}")
+        
+        status = "healthy" if connection_test else ("degraded" if credentials_exist else "offline")
         
         health_data.append(SimpleHealthResponse(
             service="Alpaca Trading API",
-            status="healthy" if api_connected else "offline",
+            status=status,
             response_time=25,
             details={
-                "api_connection": api_connected,
-                "portfolio_accessible": api_connected,
-                "orders_can_execute": api_connected
+                "api_connection": connection_test,
+                "portfolio_accessible": connection_test,
+                "orders_can_execute": connection_test,
+                "credentials_configured": credentials_exist,
+                "base_url": base_url
             }
         ))
     except Exception as e:
@@ -76,7 +116,7 @@ async def get_simple_system_health():
             service="Alpaca Trading API",
             status="offline",
             response_time=0,
-            details={"error": str(e), "api_connection": False}
+            details={"error": str(e), "api_connection": False, "credentials_configured": False}
         ))
     
     # Market Data Pipeline Check

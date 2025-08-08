@@ -23,7 +23,6 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Union, Tuple
 from dataclasses import dataclass
 from enum import Enum
-import yfinance as yf
 from alpaca_trade_api import REST, TimeFrame, TimeFrameUnit
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -142,22 +141,40 @@ class SmartExecutionEngine:
                 if (datetime.now() - cache_time).seconds < 3600:  # 1 hour cache
                     return cached_data
             
-            # Try to get historical minute data
+            # Try to get historical minute data from Alpaca
             try:
-                ticker = yf.Ticker(symbol)
+                if not self.alpaca_api:
+                    raise Exception("Alpaca API not available")
+                
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=lookback_days)
                 
-                # Get minute data
-                hist_data = ticker.history(period=f"{lookback_days}d", interval="1m")
+                # Get minute data from Alpaca
+                hist_bars = self.alpaca_api.get_bars(
+                    symbol,
+                    TimeFrame.Minute,
+                    start=start_date.isoformat(),
+                    end=end_date.isoformat(),
+                    adjustment='raw'
+                )
                 
-                if hist_data.empty:
-                    raise Exception("No historical data available")
+                if not hist_bars or len(hist_bars) == 0:
+                    raise Exception("No historical data available from Alpaca")
                 
-                # Calculate volume profile by time of day
-                hist_data['time'] = hist_data.index.time
-                volume_profile = hist_data.groupby('time').agg({
-                    'Volume': ['mean', 'std'],
+                # Convert bars to volume profile by time of day
+                volume_data = []
+                for bar in hist_bars:
+                    volume_data.append({
+                        'time': bar.t.time(),
+                        'volume': bar.v,
+                        'price': bar.c
+                    })
+                
+                # Group by time of day and calculate statistics
+                import pandas as pd
+                df = pd.DataFrame(volume_data)
+                volume_profile = df.groupby('time').agg({
+                    'volume': ['mean', 'std'],
                     'Close': 'mean'
                 }).round(2)
                 
@@ -166,41 +183,9 @@ class SmartExecutionEngine:
                                               volume_profile['avg_volume'].sum() * 100)
                 
             except Exception as e:
-                logging.warning(f"Using synthetic volume profile for {symbol}: {e}")
-                # Create synthetic volume profile based on typical market patterns
-                times = pd.date_range('09:30', '16:00', freq='5min').time
-                
-                # Typical U-shaped intraday volume pattern
-                volume_multipliers = []
-                for t in times:
-                    hour = t.hour
-                    minute = t.minute
-                    time_minutes = hour * 60 + minute
-                    
-                    # Higher volume at open (9:30) and close (15:30-16:00)
-                    if time_minutes <= 600:  # 9:30-10:00
-                        mult = 1.8
-                    elif time_minutes <= 660:  # 10:00-11:00
-                        mult = 1.2
-                    elif time_minutes <= 840:  # 11:00-14:00 (lunch lull)
-                        mult = 0.8
-                    elif time_minutes <= 900:  # 14:00-15:00
-                        mult = 1.0
-                    else:  # 15:00-16:00 (closing surge)
-                        mult = 1.6
-                    
-                    volume_multipliers.append(mult)
-                
-                # Normalize to percentages
-                total_mult = sum(volume_multipliers)
-                volume_pcts = [(mult/total_mult) * 100 for mult in volume_multipliers]
-                
-                volume_profile = pd.DataFrame({
-                    'avg_volume': [mult * 100000 for mult in volume_multipliers],
-                    'volume_std': [mult * 20000 for mult in volume_multipliers],
-                    'avg_price': [150.0] * len(times),
-                    'volume_pct': volume_pcts
-                }, index=times)
+                logging.warning(f"Volume profile data not available for {symbol}: {e}")
+                # Return None to indicate no volume data available
+                return None
             
             # Cache the result
             self.volume_profiles[cache_key] = (volume_profile, datetime.now())
@@ -232,17 +217,17 @@ class SmartExecutionEngine:
             slice_quantity = quantity / slice_count
             slice_interval = duration_minutes / slice_count
             
-            # Get current market price as benchmark (use synthetic if rate limited)
+            # Get current market price from Alpaca as benchmark
             benchmark_price = 150.0  # Default price
             try:
-                ticker = yf.Ticker(symbol)
-                current_data = ticker.history(period="1d", interval="1m").tail(1)
-                benchmark_price = current_data['Close'].iloc[0] if not current_data.empty else 150.0
+                if self.alpaca_api:
+                    bars = self.alpaca_api.get_bars(symbol, TimeFrame.Minute, limit=1, adjustment='raw')
+                    benchmark_price = float(bars[-1].c) if bars and len(bars) > 0 else 150.0
+                else:
+                    raise Exception("Alpaca API not available")
             except Exception as e:
-                logging.warning(f"Using synthetic price for {symbol}: {e}")
-                # Use symbol-specific synthetic prices
-                synthetic_prices = {'AAPL': 185.0, 'TSLA': 240.0, 'MSFT': 420.0, 'GOOGL': 145.0, 'NVDA': 880.0}
-                benchmark_price = synthetic_prices.get(symbol, 150.0)
+                logging.warning(f"Alpaca market data not available for {symbol}: {e}")
+                raise ValueError(f"Market data not available for {symbol} - cannot execute order safely")
             
             # Create execution slices
             slices = []
@@ -309,16 +294,17 @@ class SmartExecutionEngine:
             total_volume_weight = 0.0
             slice_weights = []
             
-            # Get current market price (use synthetic if needed)  
+            # Get current market price from Alpaca
             current_price = 150.0  # Default
             try:
-                ticker = yf.Ticker(symbol)
-                current_data = ticker.history(period="1d", interval="1m").tail(1)
-                current_price = current_data['Close'].iloc[0] if not current_data.empty else 150.0
+                if self.alpaca_api:
+                    bars = self.alpaca_api.get_bars(symbol, TimeFrame.Minute, limit=1, adjustment='raw')
+                    current_price = float(bars[-1].c) if bars and len(bars) > 0 else 150.0
+                else:
+                    raise Exception("Alpaca API not available")
             except Exception as e:
-                logging.warning(f"Using synthetic price for VWAP {symbol}: {e}")
-                synthetic_prices = {'AAPL': 185.0, 'TSLA': 240.0, 'MSFT': 420.0, 'GOOGL': 145.0, 'NVDA': 880.0}
-                current_price = synthetic_prices.get(symbol, 150.0)
+                logging.warning(f"Alpaca market data not available for VWAP {symbol}: {e}")
+                raise ValueError(f"Market data not available for {symbol} - VWAP execution cannot proceed")
             
             # Calculate volume weights for each time slice
             for exec_time in time_slices:
@@ -382,22 +368,40 @@ class SmartExecutionEngine:
             List of optimally timed execution slices
         """
         try:
-            # Use synthetic market parameters if data unavailable
-            synthetic_prices = {'AAPL': 185.0, 'TSLA': 240.0, 'MSFT': 420.0, 'GOOGL': 145.0, 'NVDA': 880.0}
-            current_price = synthetic_prices.get(symbol, 150.0)
+            # Market data required for accurate execution - no synthetic fallbacks
+            if not self.alpaca_api:
+                raise ValueError(f"Market data API not available - cannot determine current price for {symbol}")
+                
+            current_price = None  # Will throw error if data not available
             volatility = 0.25  # 25% annualized volatility
             avg_volume = 1000000  # 1M average volume
             
             try:
-                # Get market data for impact estimation
-                ticker = yf.Ticker(symbol)
-                hist_data = ticker.history(period="5d", interval="1m")
-                
-                if not hist_data.empty:
-                    returns = hist_data['Close'].pct_change().dropna()
-                    volatility = returns.std() * np.sqrt(252)  # Annualized volatility
-                    avg_volume = hist_data['Volume'].mean()
-                    current_price = hist_data['Close'].iloc[-1]
+                # Get market data for impact estimation using Alpaca
+                if self.alpaca_api:
+                    bars = self.alpaca_api.get_bars(
+                        symbol, 
+                        TimeFrame.Minute, 
+                        limit=1200,  # ~5 days of minute bars
+                        adjustment='raw'
+                    )
+                    
+                    if bars and len(bars) > 0:
+                        # Calculate returns and volatility
+                        closes = [float(bar.c) for bar in bars]
+                        volumes = [float(bar.v) for bar in bars]
+                        
+                        if len(closes) > 1:
+                            returns = []
+                            for i in range(1, len(closes)):
+                                returns.append((closes[i] - closes[i-1]) / closes[i-1])
+                            
+                            import numpy as np
+                            volatility = np.std(returns) * np.sqrt(252)  # Annualized volatility
+                            avg_volume = np.mean(volumes)
+                            current_price = closes[-1]
+                else:
+                    raise Exception("Alpaca API not available")
             except Exception as e:
                 logging.warning(f"Using synthetic market data for {symbol}: {e}")
             
@@ -463,16 +467,17 @@ class SmartExecutionEngine:
         try:
             logging.info(f"🔄 Executing slice {slice_obj.slice_id}: {slice_obj.quantity} shares of {slice_obj.symbol}")
             
-            # Get current market price for slippage calculation (use synthetic if rate limited)
+            # Get current market price for slippage calculation using Alpaca
             current_price = 150.0  # Default
             try:
-                ticker = yf.Ticker(slice_obj.symbol)
-                current_data = ticker.history(period="1d", interval="1m").tail(1)
-                current_price = current_data['Close'].iloc[0] if not current_data.empty else 150.0
+                if self.alpaca_api:
+                    bars = self.alpaca_api.get_bars(slice_obj.symbol, TimeFrame.Minute, limit=1, adjustment='raw')
+                    current_price = float(bars[-1].c) if bars and len(bars) > 0 else 150.0
+                else:
+                    raise Exception("Alpaca API not available")
             except Exception as e:
-                logging.warning(f"Using synthetic price for slice execution {slice_obj.symbol}: {e}")
-                synthetic_prices = {'AAPL': 185.0, 'TSLA': 240.0, 'MSFT': 420.0, 'GOOGL': 145.0, 'NVDA': 880.0}
-                current_price = synthetic_prices.get(slice_obj.symbol, 150.0)
+                logging.warning(f"Alpaca market data not available for slice execution {slice_obj.symbol}: {e}")
+                raise ValueError(f"Market data not available for {slice_obj.symbol} - execution cannot proceed safely")
             
             if dry_run:
                 # Simulate execution with realistic slippage
@@ -571,16 +576,17 @@ class SmartExecutionEngine:
             if not slices:
                 raise ValueError("No execution slices generated")
             
-            # Get benchmark price (use synthetic if rate limited)
+            # Get benchmark price using Alpaca
             benchmark_price = 150.0  # Default
             try:
-                ticker = yf.Ticker(symbol)
-                benchmark_data = ticker.history(period="1d", interval="1m").tail(1)
-                benchmark_price = benchmark_data['Close'].iloc[0] if not benchmark_data.empty else 150.0
+                if self.alpaca_api:
+                    bars = self.alpaca_api.get_bars(symbol, TimeFrame.Minute, limit=1, adjustment='raw')
+                    benchmark_price = float(bars[-1].c) if bars and len(bars) > 0 else 150.0
+                else:
+                    raise Exception("Alpaca API not available")
             except Exception as e:
-                logging.warning(f"Using synthetic benchmark price for {symbol}: {e}")
-                synthetic_prices = {'AAPL': 185.0, 'TSLA': 240.0, 'MSFT': 420.0, 'GOOGL': 145.0, 'NVDA': 880.0}
-                benchmark_price = synthetic_prices.get(symbol, 150.0)
+                logging.warning(f"Alpaca market data not available for benchmark {symbol}: {e}")
+                raise ValueError(f"Market data not available for {symbol} - cannot establish benchmark price")
             
             # Create execution order
             execution_order = ExecutionOrder(

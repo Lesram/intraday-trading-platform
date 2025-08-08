@@ -546,6 +546,17 @@ export class TradingApiService {
       throw error;
     }
   }
+
+  // Market Data APIs
+  static async getVixData(): Promise<any> {
+    try {
+      const response = await apiClient.get('/market/vix');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch VIX data:', error);
+      throw error;
+    }
+  }
 }
 
 export default TradingApiService;

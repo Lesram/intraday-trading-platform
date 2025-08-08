@@ -172,30 +172,20 @@ class AdvancedMLPredictor:
             logger.error(f"Error in model loading: {e}")
     
     def _train_fallback_model(self, model, model_name):
-        """Train a fallback model with synthetic data"""
-        try:
-            logger.warning(f"⚠️ CRITICAL: Training {model_name} with SYNTHETIC data - predictions will be unreliable!")
-            logger.warning(f"⚠️ This will significantly impact ensemble quality until real model is restored")
-            
-            import numpy as np
-            # Generate synthetic training data
-            n_samples = 1000
-            X = np.random.randn(n_samples, 11)  # Match production feature count
-            # Create synthetic labels with some pattern (but still arbitrary)
-            y = ((X[:, 0] + X[:, 1] > 0) & (X[:, 2] > X[:, 3]) & (X[:, 4] > 0)).astype(int)
-            
-            model.fit(X, y)
-            logger.info(f"✅ Trained fallback {model_name} model with synthetic data")
-            logger.warning(f"🚨 {model_name.upper()} MODEL IS USING SYNTHETIC DATA - RETRAIN WITH REAL DATA ASAP!")
-            
-            # Save the fallback model with clear naming
-            fallback_filename = f'{model_name}_fallback_synthetic.pkl'
-            with open(fallback_filename, 'wb') as f:
-                pickle.dump(model, f)
-            logger.info(f"💾 Saved synthetic fallback model as {fallback_filename}")
-                
-        except Exception as e:
-            logger.error(f"Failed to train fallback {model_name} model: {e}")
+        """DO NOT train fallback models with synthetic data - leave models unavailable"""
+        logger.error(f"❌ CRITICAL: {model_name} model file not found")
+        logger.error(f"❌ NO FALLBACK: Will not train with synthetic data - this defeats the purpose of real trading")
+        logger.error(f"❌ Please retrain {model_name} model with real market data")
+        
+        # Set model to None to indicate unavailability
+        if model_name == 'rf':
+            self.models['rf'] = None
+        elif model_name == 'xgb':
+            self.models['xgb'] = None
+        elif model_name == 'lstm':
+            self.models['lstm'] = None
+        
+        logger.warning(f"⚠️ {model_name.upper()} model marked as UNAVAILABLE - ensemble will operate with reduced capacity")
     
     def _create_simple_lstm(self):
         """Create a simple LSTM model as fallback"""

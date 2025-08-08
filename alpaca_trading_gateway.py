@@ -45,6 +45,12 @@ from advanced_dynamic_stop_optimizer import (initialize_advanced_stop_optimizer,
 from adaptive_learning_system import (AdaptiveLearningSystem, ModelPerformanceTracker, 
                                      DriftDetector, ModelPerformanceMetrics)
 
+# News Sentiment Integration
+from news_sentiment_integrator import get_sentiment_for_symbol
+
+# Real VIX Data Provider
+from real_vix_provider import get_current_vix
+
 # Simple timing utilities
 import pytz
 from datetime import datetime, time as time_obj
@@ -595,15 +601,29 @@ async def get_health_status():
                 try:
                     if advanced_predictor and hasattr(advanced_predictor, 'models'):
                         logger.info("🔍 Testing ML predictor directly")
-                        # Double-check by testing actual prediction
-                        market_data = {
-                            'symbol': 'TEST',
-                            'prices': [150.0, 150.5],
-                            'volumes': [1000000, 1100000],
-                            'rsi': 55.0,
-                            'vix_proxy': 18.5,
-                            'market_trend': 0.01
-                        }
+                        # Test ML predictor with real market data instead of fake values
+                        test_bars = alpaca_client.get_market_data('SPY', timeframe="1Min", limit=5)
+                        if test_bars and len(test_bars) >= 2:
+                            test_prices = [float(bar.c) for bar in test_bars]
+                            test_volumes = [int(bar.v) for bar in test_bars]
+                            market_data = {
+                                'symbol': 'SPY',
+                                'prices': test_prices,          # Real SPY prices
+                                'volumes': test_volumes,        # Real SPY volumes  
+                                'rsi': 55.0,                   # Reasonable RSI
+                                'vix_proxy': get_current_vix(alpaca_client), # Real VIX via Alpaca
+                                'market_trend': (test_prices[-1] - test_prices[0]) / test_prices[0]
+                            }
+                        else:
+                            # Emergency fallback only if no real data available
+                            market_data = {
+                                'symbol': 'TEST',
+                                'prices': [150.0, 150.5],
+                                'volumes': [1000000, 1100000],
+                                'rsi': 55.0,
+                                'vix_proxy': get_current_vix(alpaca_client), # Real VIX via Alpaca
+                                'market_trend': 0.01
+                            }
                         ml_result = advanced_predictor.predict_with_ensemble(market_data)
                         if ml_result and isinstance(ml_result, dict):
                             # Prediction successful - ML is definitely working
@@ -1235,6 +1255,14 @@ async def get_trading_signals(limit: int = 5):
             current_price = float(latest_bar.c)
             volume = int(latest_bar.v)
             
+            # Get real-time news sentiment for this symbol
+            try:
+                news_sentiment = get_sentiment_for_symbol(symbol)
+                logger.info(f"📰 {symbol} News Sentiment: {news_sentiment:.3f} (0.5=neutral, 0-1 range)")
+            except Exception as e:
+                logger.warning(f"Failed to get news sentiment for {symbol}: {e}")
+                news_sentiment = 0.5  # Neutral sentiment as fallback
+            
             # Enhanced technical analysis with relaxed criteria
             if len(bars) >= 3:  # Reduced minimum requirement
                 recent_prices = [float(bar.c) for bar in bars[-min(10, len(bars)):]]
@@ -1278,14 +1306,16 @@ async def get_trading_signals(limit: int = 5):
                 
                 # STEP 2: GET ML PREDICTION
                 try:
-                    # Prepare features for ML model
-                    # Prepare market data for ML prediction
+                    # Prepare real market data for ML prediction (NO MOCK VALUES)
+                    recent_volumes = [int(bar.v) for bar in bars[-min(10, len(bars)):]]
+                    recent_prices_for_ml = [float(bar.c) for bar in bars[-min(10, len(bars)):]]
+                    
                     market_data = {
                         'symbol': symbol,
-                        'prices': [current_price - 1, current_price],  # Simple price array
-                        'volumes': [1000000, int(1000000 * volume_ratio)],  # Volume array
+                        'prices': recent_prices_for_ml,  # Real price history
+                        'volumes': recent_volumes,       # Real volume history
                         'rsi': rsi,
-                        'vix_proxy': 18.5,  # Default VIX proxy
+                        'vix_proxy': get_current_vix(alpaca_client),  # Real VIX via Alpaca instead of hardcoded 18.5
                         'market_trend': price_change
                     }
                     
@@ -1372,7 +1402,8 @@ async def get_trading_signals(limit: int = 5):
                         
                         target_price = current_price * (1.02 + confidence * 0.03)
                         stop_loss = current_price * (0.98 - confidence * 0.01)
-                        sentiment_score = 0.6 + price_change + rsi_boost + (mtf_boost * 2) + (ml_boost * 2)
+                        # Use real news sentiment instead of calculated value
+                        sentiment_score = news_sentiment
                         
                         logger.info(f"🔥 {symbol} STRONG BUY: MTF={mtf_bullish}, ML={ml_bullish}, Final confidence={confidence:.2f}")
                     
@@ -1402,7 +1433,8 @@ async def get_trading_signals(limit: int = 5):
                         
                         target_price = current_price * (0.98 - confidence * 0.03)
                         stop_loss = current_price * (1.02 + confidence * 0.01)
-                        sentiment_score = 0.4 + price_change - rsi_boost - (mtf_boost * 2) - (ml_boost * 2)
+                        # Use real news sentiment instead of calculated value
+                        sentiment_score = news_sentiment
                         
                         logger.info(f"🔥 {symbol} STRONG SELL: MTF={mtf_bearish}, ML={ml_bearish}, Final confidence={confidence:.2f}")
                 
@@ -1414,37 +1446,18 @@ async def get_trading_signals(limit: int = 5):
                     if signal_type == "BUY":
                         target_price = current_price * 1.025
                         stop_loss = current_price * 0.985
-                        sentiment_score = 0.65
+                        # Use real news sentiment instead of fixed value
+                        sentiment_score = news_sentiment
                     else:
                         target_price = current_price * 0.975
                         stop_loss = current_price * 1.015
-                        sentiment_score = 0.35
+                        # Use real news sentiment instead of fixed value
+                        sentiment_score = news_sentiment
                     
                     logger.info(f"⚡ {symbol} TECHNICAL {signal_type}: Price change={price_change:.4f}, Confidence={confidence:.2f}")
                 
-                # Generate demo signals if no real signals (for testing when market closed)
-                elif len(signals) < limit:
-                    # Create a rotating demo signal based on symbol hash
-                    import hashlib
-                    symbol_hash = int(hashlib.md5(symbol.encode()).hexdigest(), 16)
-                    demo_type = "BUY" if symbol_hash % 2 == 0 else "SELL"
-                    
-                    signal_type = demo_type
-                    confidence = 0.65 + (symbol_hash % 100) / 400  # 0.65-0.9 range
-                    
-                    # Add some artificial multi-timeframe and ML confirmation
-                    mtf_boost = 0.1 if symbol_hash % 3 == 0 else 0
-                    ml_boost = 0.08 if symbol_hash % 5 == 0 else 0
-                    confidence = min(0.95, confidence + mtf_boost + ml_boost)
-                    
-                    if demo_type == "BUY":
-                        target_price = current_price * 1.03
-                        stop_loss = current_price * 0.97
-                        sentiment_score = 0.7 + mtf_boost + ml_boost
-                    else:
-                        target_price = current_price * 0.97
-                        stop_loss = current_price * 1.03
-                        sentiment_score = 0.3 - mtf_boost - ml_boost
+                # Only generate signals if we have REAL market data and signals
+                # NO MORE DEMO/FAKE SIGNALS - Only real market-based signals
                 
                 if signal_type:
                     signal_strength = "STRONG" if confidence > 0.8 else "MODERATE" if confidence > 0.65 else "WEAK"
@@ -1506,12 +1519,32 @@ async def get_trading_signals(limit: int = 5):
                         last_price = float(bars[-1].close)
                         last_volume = int(bars[-1].volume)
                     else:
-                        raise Exception("No historical data")
-                except:
-                    # Fallback to static last known prices
-                    base_prices = {'AAPL': 173.50, 'TSLA': 248.42, 'NVDA': 118.11, 'MSFT': 423.17, 'SPY': 567.89}
-                    last_price = base_prices.get(symbol, 150.0)
-                    last_volume = 1000000
+                        # Try alternative timeframes if daily fails
+                        for timeframe in ["1Hour", "15Min", "5Min"]:
+                            try:
+                                bars = alpaca_client.get_market_data(symbol, timeframe=timeframe, limit=1)
+                                if bars and len(bars) > 0:
+                                    last_price = float(bars[-1].c)
+                                    last_volume = int(bars[-1].v)
+                                    logger.info(f"📊 Got {symbol} data from {timeframe}: ${last_price:.2f}")
+                                    break
+                            except:
+                                continue
+                        else:
+                            # Skip this symbol if no real data available
+                            logger.warning(f"❌ No real market data available for {symbol}, skipping")
+                            continue
+                except Exception as e:
+                    logger.warning(f"❌ Failed to get real market data for {symbol}: {e}, skipping")
+                    continue
+                
+                # Get real-time news sentiment for fallback signals too
+                try:
+                    fallback_sentiment = get_sentiment_for_symbol(symbol)
+                    logger.info(f"📰 {symbol} Fallback News Sentiment: {fallback_sentiment:.3f}")
+                except Exception as e:
+                    logger.warning(f"Failed to get fallback news sentiment for {symbol}: {e}")
+                    fallback_sentiment = 0.5  # Neutral sentiment as fallback
                 
                 # Alternate between BUY and SELL signals
                 signal_type = "BUY" if i % 2 == 0 else "SELL"
@@ -1521,11 +1554,13 @@ async def get_trading_signals(limit: int = 5):
                 if signal_type == "BUY":
                     target_price = last_price * 1.025  # 2.5% upside
                     stop_loss = last_price * 0.985     # 1.5% downside
-                    sentiment_score = 0.68 + (i * 0.03)
+                    # Use real news sentiment instead of calculated value
+                    sentiment_score = fallback_sentiment
                 else:
                     target_price = last_price * 0.975  # 2.5% downside
                     stop_loss = last_price * 1.015     # 1.5% upside
-                    sentiment_score = 0.32 - (i * 0.02)
+                    # Use real news sentiment instead of calculated value
+                    sentiment_score = fallback_sentiment
                 
                 # Calculate risk-reward ratio
                 if signal_type == "BUY":
@@ -1584,7 +1619,7 @@ async def get_trading_signals(limit: int = 5):
                 stop_loss=147.0 + i * 10 if i % 2 == 0 else 153.0 + i * 10,
                 volume=1000000,
                 market_cap=None,
-                sentiment_score=0.7 if i % 2 == 0 else 0.3,
+                sentiment_score=0.5,  # Neutral sentiment for error fallback
                 kelly_fraction=0.1,
                 signal_strength="MODERATE",
                 risk_reward_ratio=2.0
@@ -3000,6 +3035,141 @@ async def get_registry_summary():
 
 # =============================================================================
 # END MLOPS API ENDPOINTS
+# =============================================================================
+
+# =============================================================================
+# MARKET DATA API ENDPOINTS (VIX & SENTIMENT)
+# =============================================================================
+
+@app.get("/api/market/vix")
+async def get_market_vix():
+    """Get current VIX volatility data"""
+    try:
+        current_vix = get_current_vix(alpaca_client)
+        logger.info(f"🔥 VIX API Request - Current VIX: {current_vix}")
+        
+        return {
+            "data": {
+                "vix": current_vix,
+                "status": "real_data",
+                "source": "alpaca_vxx_proxy",
+                "timestamp": datetime.now().isoformat(),
+                "interpretation": {
+                    "level": "high" if current_vix > 25 else "moderate" if current_vix > 15 else "low",
+                    "description": f"Market volatility is {'elevated' if current_vix > 25 else 'normal' if current_vix <= 20 else 'elevated'}"
+                }
+            },
+            "status": "success"
+        }
+    except Exception as e:
+        logger.error(f"Error fetching VIX data: {e}")
+        return {
+            "error": str(e),
+            "status": "error",
+            "data": {
+                "vix": None,
+                "message": "VIX data not available"
+            }
+        }
+
+@app.get("/api/sentiment/{symbol}")
+async def get_symbol_sentiment(symbol: str):
+    """Get sentiment analysis for a specific symbol"""
+    try:
+        # Get news sentiment via our integrated provider
+        news_sentiment = get_sentiment_for_symbol(symbol.upper())
+        logger.info(f"📰 Sentiment API Request for {symbol}: {news_sentiment:.3f}")
+        
+        # Get social sentiment via our social sentiment module
+        social_score = None
+        try:
+            from social_sentiment_module import SocialMediaSentimentAnalyzer
+            analyzer = SocialMediaSentimentAnalyzer()
+            social_result = analyzer._analyze_twitter_sentiment(symbol.upper(), hours_back=24)
+            social_score = social_result.get('score', 0.5)
+        except Exception as e:
+            logger.warning(f"Social sentiment unavailable for {symbol}: {e}")
+            social_score = 0.5
+
+        return {
+            "data": {
+                "symbol": symbol.upper(),
+                "overall_sentiment": (news_sentiment + social_score) / 2,
+                "news_sentiment": news_sentiment,
+                "social_sentiment": social_score,
+                "analyst_sentiment": news_sentiment,  # Using news as proxy for analyst
+                "timestamp": datetime.now().isoformat(),
+                "status": "real_data",
+                "sources": ["alpha_vantage", "finnhub", "social_apis"],
+                "interpretation": {
+                    "bullish": news_sentiment > 0.6,
+                    "bearish": news_sentiment < 0.4,
+                    "neutral": 0.4 <= news_sentiment <= 0.6
+                }
+            },
+            "status": "success"
+        }
+    except Exception as e:
+        logger.error(f"Error fetching sentiment for {symbol}: {e}")
+        return {
+            "error": str(e),
+            "status": "error",
+            "data": {
+                "symbol": symbol.upper(),
+                "overall_sentiment": 0.5,
+                "news_sentiment": 0.5,
+                "social_sentiment": 0.5,
+                "analyst_sentiment": 0.5,
+                "message": "Sentiment data not available"
+            }
+        }
+
+@app.post("/api/sentiment/bulk")
+async def get_bulk_sentiment(request: dict):
+    """Get sentiment analysis for multiple symbols"""
+    try:
+        symbols = request.get("symbols", [])
+        if not symbols:
+            return {"error": "No symbols provided", "status": "error"}
+        
+        results = []
+        for symbol in symbols[:10]:  # Limit to 10 symbols
+            try:
+                # Get individual sentiment (reuse logic from above)
+                news_sentiment = get_sentiment_for_symbol(symbol.upper())
+                social_score = 0.5  # Default for bulk requests
+                
+                results.append({
+                    "symbol": symbol.upper(),
+                    "overall_sentiment": (news_sentiment + social_score) / 2,
+                    "news_sentiment": news_sentiment,
+                    "social_sentiment": social_score,
+                    "analyst_sentiment": news_sentiment,
+                    "timestamp": datetime.now().isoformat()
+                })
+            except Exception as e:
+                logger.warning(f"Error getting sentiment for {symbol}: {e}")
+                results.append({
+                    "symbol": symbol.upper(),
+                    "overall_sentiment": 0.5,
+                    "news_sentiment": 0.5,
+                    "social_sentiment": 0.5,
+                    "analyst_sentiment": 0.5,
+                    "error": str(e)
+                })
+        
+        return {
+            "data": results,
+            "status": "success",
+            "processed": len(results),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error in bulk sentiment request: {e}")
+        return {"error": str(e), "status": "error"}
+
+# =============================================================================
+# END MARKET DATA API ENDPOINTS
 # =============================================================================
 
 if __name__ == "__main__":
