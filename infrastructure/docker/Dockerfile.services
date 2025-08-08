@@ -1,0 +1,205 @@
+# 🚀 INDIVIDUAL SERVICE DOCKERFILES
+# Complete containerization for all microservices
+
+# =============================================================================
+# PREDICTION SERVICE DOCKERFILE
+# =============================================================================
+FROM python:3.11-slim as prediction-service
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/prediction-requirements.txt .
+RUN pip install --no-cache-dir -r prediction-requirements.txt
+
+# Copy application code
+COPY src/prediction_service/ ./prediction_service/
+COPY src/utils/ ./utils/
+COPY models/ ./models/
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+EXPOSE 8080 8081
+CMD ["python", "-m", "prediction_service.main"]
+
+# =============================================================================
+# RISK SERVICE DOCKERFILE  
+# =============================================================================
+FROM python:3.11-slim as risk-service
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/risk-requirements.txt .
+RUN pip install --no-cache-dir -r risk-requirements.txt
+
+# Copy application code
+COPY src/risk_service/ ./risk_service/
+COPY src/utils/ ./utils/
+COPY vector_kelly_module.py ./
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8080 8081
+CMD ["python", "-m", "risk_service.main"]
+
+# =============================================================================
+# DATA SERVICE DOCKERFILE
+# =============================================================================
+FROM python:3.11-slim as data-service
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/data-requirements.txt .
+RUN pip install --no-cache-dir -r data-requirements.txt
+
+# Copy application code
+COPY src/data_service/ ./data_service/
+COPY src/utils/ ./utils/
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8080 8081
+CMD ["python", "-m", "data_service.main"]
+
+# =============================================================================
+# SENTIMENT SERVICE DOCKERFILE
+# =============================================================================
+FROM python:3.11-slim as sentiment-service
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/sentiment-requirements.txt .
+RUN pip install --no-cache-dir -r sentiment-requirements.txt
+
+# Copy application code
+COPY src/sentiment_service/ ./sentiment_service/
+COPY src/utils/ ./utils/
+COPY enhanced_social_sentiment_module.py ./
+COPY models/ ./models/
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8080 8081
+CMD ["python", "-m", "sentiment_service.main"]
+
+# =============================================================================
+# PORTFOLIO SERVICE DOCKERFILE
+# =============================================================================
+FROM python:3.11-slim as portfolio-service
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/portfolio-requirements.txt .
+RUN pip install --no-cache-dir -r portfolio-requirements.txt
+
+# Copy application code
+COPY src/portfolio_service/ ./portfolio_service/
+COPY src/utils/ ./utils/
+COPY vector_kelly_module.py ./
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8080 8081
+CMD ["python", "-m", "portfolio_service.main"]
+
+# =============================================================================
+# EXECUTION SERVICE DOCKERFILE
+# =============================================================================
+FROM python:3.11-slim as execution-service
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/execution-requirements.txt .
+RUN pip install --no-cache-dir -r execution-requirements.txt
+
+# Copy application code
+COPY src/execution_service/ ./execution_service/
+COPY src/utils/ ./utils/
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8080 8081
+CMD ["python", "-m", "execution_service.main"]
+
+# =============================================================================
+# MONITORING SERVICE DOCKERFILE
+# =============================================================================
+FROM python:3.11-slim as monitoring-service
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/monitoring-requirements.txt .
+RUN pip install --no-cache-dir -r monitoring-requirements.txt
+
+# Copy application code
+COPY src/monitoring_service/ ./monitoring_service/
+COPY src/utils/ ./utils/
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8080 8081
+CMD ["python", "-m", "monitoring_service.main"]

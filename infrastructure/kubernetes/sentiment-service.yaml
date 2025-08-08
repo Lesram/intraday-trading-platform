@@ -1,0 +1,177 @@
+# 💭 SENTIMENT ANALYSIS SERVICE - KUBERNETES DEPLOYMENT
+# Enhanced social sentiment with bot detection and validation
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentiment-service
+  namespace: trading
+  labels:
+    app: sentiment-service
+    tier: analytics
+    version: v1
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sentiment-service
+  template:
+    metadata:
+      labels:
+        app: sentiment-service
+        tier: analytics
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: sentiment-service
+        image: trading/sentiment-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: metrics
+        env:
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: KAFKA_BROKERS
+          value: "kafka-service:9092"
+        - name: TWITTER_BEARER_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: social-secrets
+              key: twitter-bearer-token
+        - name: REDDIT_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: social-secrets
+              key: reddit-client-id
+        - name: REDDIT_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: social-secrets
+              key: reddit-client-secret
+        - name: BOT_DETECTION_ENABLED
+          value: "true"
+        - name: MIN_ACCOUNT_AGE_DAYS
+          value: "30"
+        - name: MIN_FOLLOWER_COUNT
+          value: "50"
+        - name: SENTIMENT_CACHE_TTL
+          value: "300"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: JAEGER_AGENT_HOST
+          value: "jaeger-agent"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      securityContext:
+        fsGroup: 1000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentiment-service
+  namespace: trading
+  labels:
+    app: sentiment-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: metrics
+  selector:
+    app: sentiment-service
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sentiment-service-hpa
+  namespace: trading
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sentiment-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: social-secrets
+  namespace: trading
+type: Opaque
+data:
+  # Base64 encoded social media API keys - REPLACE WITH ACTUAL VALUES
+  twitter-bearer-token: WUVF1UkFQSSyS0VZLVBMQUNFSE9MREVS  # YOUR_BEARER_TOKEN placeholder
+  reddit-client-id: WUVF1UkFQSSyS0VZLVBMQUNFSE9MREVS  # YOUR_CLIENT_ID placeholder
+  reddit-client-secret: WUVF1UkFQSSyS0VZLVBMQUNFSE9MREVS  # YOUR_CLIENT_SECRET placeholder

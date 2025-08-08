@@ -1,0 +1,63 @@
+# 🚀 SIMPLIFIED MICROSERVICES DEPLOYMENT
+# Windows-compatible deployment script
+
+version: '3.8'
+
+services:
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: trading-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - trading-network
+
+  # PostgreSQL for persistent data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: trading-postgres
+    environment:
+      POSTGRES_USER: trading_user
+      POSTGRES_PASSWORD: secure_password_123
+      POSTGRES_DB: trading_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - trading-network
+
+  # Main trading service (our current system)
+  trading-main:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.main
+    container_name: trading-main-service
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=trading_platform
+      - POSTGRES_USER=trading_user
+      - POSTGRES_PASSWORD=secure_password_123
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - trading-network
+    volumes:
+      - ../../models:/app/models
+      - ../../data:/app/data
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  trading-network:
+    driver: bridge

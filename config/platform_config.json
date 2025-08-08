@@ -1,0 +1,73 @@
+{
+  "platform_config": {
+    "name": "Institutional Trading Platform",
+    "version": "1.0.0",
+    "description": "Professional Algorithmic Trading Platform with React Dashboard",
+    "status": "PRODUCTION_READY"
+  },
+  "ports": {
+    "trading_gateway": 8002,
+    "dashboard_frontend": 3002,
+    "backend_api": 5000,
+    "websocket": 8002
+  },
+  "services": {
+    "trading_gateway": {
+      "script": "alpaca_trading_gateway.py",
+      "port": 8002,
+      "description": "Main autonomous trading system with FastAPI",
+      "endpoints": {
+        "api_docs": "http://localhost:8002/docs",
+        "health": "http://localhost:8002/health",
+        "portfolio": "http://localhost:8002/portfolio/metrics",
+        "websocket": "ws://localhost:8002/ws"
+      }
+    },
+    "react_dashboard": {
+      "directory": "trading-dashboard",
+      "script": "npm run dev",
+      "port": 3001,
+      "description": "Professional React/TypeScript dashboard with Material-UI",
+      "url": "http://localhost:3001"
+    },
+    "backend_api": {
+      "script": "backend_api_server.py",
+      "port": 5000,
+      "description": "Backend API server for additional services",
+      "url": "http://localhost:5000"
+    }
+  },
+  "models": {
+    "lstm": {
+      "file": "lstm_ensemble_best.keras",
+      "accuracy": "97.46%",
+      "description": "Primary LSTM neural network for price prediction"
+    },
+    "xgboost": {
+      "file": "xgb_ensemble_v2.pkl",
+      "description": "XGBoost gradient boosting classifier"
+    },
+    "random_forest": {
+      "file": "rf_ensemble_v2.pkl",
+      "description": "Random Forest ensemble classifier"
+    }
+  },
+  "key_scripts": {
+    "main_trading_system": "runfile.py",
+    "trading_gateway": "alpaca_trading_gateway.py",
+    "platform_startup": "start_platform_comprehensive.py",
+    "dashboard_server": "serve_react_dashboard.py"
+  },
+  "startup_sequence": [
+    "1. Start Trading Gateway (alpaca_trading_gateway.py) on port 8002",
+    "2. Start React Dashboard (npm run dev) on port 3001",
+    "3. Verify all services are running",
+    "4. Open dashboard in browser"
+  ],
+  "quick_access_urls": {
+    "dashboard": "http://localhost:3002",
+    "api_docs": "http://localhost:8002/docs",
+    "health_check": "http://localhost:8002/health",
+    "portfolio_metrics": "http://localhost:8002/portfolio/metrics"
+  }
+}

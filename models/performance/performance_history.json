@@ -1,0 +1,18 @@
+{
+  "test_model": [
+    {
+      "timestamp": "2025-08-06T00:39:23.361231",
+      "model_type": "test_model",
+      "accuracy": 0.8455726966039515,
+      "precision": 0.8652360628745509,
+      "recall": 0.8118724397543571,
+      "f1_score": 0.8556419062269224,
+      "prediction_confidence": 0.8860144252279298,
+      "prediction_count": 62,
+      "correct_predictions": 50,
+      "profit_attribution": 0.022967014585490327,
+      "sharpe_ratio": 0.8572729337042311,
+      "max_drawdown": 0.08726597114810636
+    }
+  ]
+}
