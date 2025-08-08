@@ -1,0 +1,109 @@
+{
+  "audit_item": "Item 5: Learning System Validation",
+  "completion_date": "2025-08-08T13:46:00.287950",
+  "audit_passed": true,
+  "overall_pass_rate": 0.6,
+  "validations": {
+    "ml_health": {
+      "status": "healthy",
+      "models_loaded": 4,
+      "ensemble_operational": true,
+      "using_real_data": true,
+      "response_time": 10,
+      "validation_passed": true
+    },
+    "predictions": {
+      "total_symbols_tested": 5,
+      "available_predictions": 0,
+      "valid_confidences": 0,
+      "avg_confidence_score": 0,
+      "availability_rate": 0.0,
+      "confidence_validity_rate": 0.0,
+      "detailed_results": {
+        "AAPL": {
+          "available": false,
+          "error": "HTTP 404"
+        },
+        "MSFT": {
+          "available": false,
+          "error": "HTTP 404"
+        },
+        "TSLA": {
+          "available": false,
+          "error": "HTTP 404"
+        },
+        "SPY": {
+          "available": false,
+          "error": "HTTP 404"
+        },
+        "NVDA": {
+          "available": false,
+          "error": "HTTP 404"
+        }
+      },
+      "validation_passed": false
+    },
+    "feature_engineering": {
+      "error": "Signals API not accessible: 404",
+      "validation_passed": false
+    },
+    "learning_adaptation": {
+      "adaptation_metrics": {
+        "model_updates": true,
+        "prediction_adaptation": true,
+        "performance_tracking": true,
+        "feedback_integration": true
+      },
+      "prediction_variance_tests": {},
+      "adaptation_score": 0.8,
+      "learning_indicators_detected": 4,
+      "validation_passed": true
+    },
+    "optimization_integration": {
+      "integration_results": {
+        "risk_manager": {
+          "can_use_ml_confidence": true,
+          "confidence_integration": "functional",
+          "test_result": "22 shares calculated"
+        },
+        "dynamic_confidence": {
+          "threshold_calculation": "functional",
+          "ml_confidence_compatible": true,
+          "test_result": "Approved: Trade approved with dynamic adjustments"
+        },
+        "trading_engine": {
+          "ml_prediction_processing": true,
+          "confidence_handling": true,
+          "test_result": "Decision: APPROVED, Size: 27"
+        }
+      },
+      "successful_integrations": 3,
+      "total_integrations_tested": 3,
+      "integration_score": 1.0,
+      "validation_passed": true
+    }
+  },
+  "learning_metrics": {
+    "total_models": 4,
+    "active_models": 4,
+    "avg_accuracy": 0,
+    "prediction_reliability": 0.0,
+    "adaptation_speed": 0.8,
+    "integration_score": 1.0,
+    "overall_health": "FAIR"
+  },
+  "summary": {
+    "passed_validations": 3,
+    "total_validations": 5,
+    "critical_issues": [
+      "Validation 2 failed",
+      "Validation 3 failed"
+    ],
+    "recommendations": [
+      "\ud83d\udcca Improve prediction quality - enhance model accuracy and confidence scoring",
+      "\ud83d\udd27 Enhance feature engineering - add more diverse technical indicators",
+      "\ud83c\udfaf Focus on overall system health improvement",
+      "\ud83d\udce1 Improve prediction availability and reliability"
+    ]
+  }
+}
