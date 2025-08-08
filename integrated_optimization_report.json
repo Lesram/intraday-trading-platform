@@ -1,0 +1,102 @@
+{
+  "timestamp": "2025-08-08T13:36:13.764364",
+  "optimization_status": "Phase 1 + Phase 2 ACTIVE",
+  "phase_1_systems": {
+    "unified_risk_management": "\u2705 ACTIVE",
+    "strategy_stop_losses": "\u2705 ACTIVE",
+    "integrated_dashboard": "\u2705 ACTIVE"
+  },
+  "phase_2_systems": {
+    "dynamic_confidence_thresholds": "\u2705 ACTIVE",
+    "vix_market_adaptation": "\u2705 ACTIVE",
+    "regime_based_adjustments": "\u2705 ACTIVE"
+  },
+  "current_market_conditions": {
+    "vix": 24.146453754320543,
+    "regime": "normal_volatility",
+    "spx_1d_change": "0.45%",
+    "spx_5d_change": "4.51%",
+    "trend_strength": 0.9010369448680089,
+    "correlation_breakdown": false
+  },
+  "strategy_adaptations": {
+    "automated_signal_trading": {
+      "base_threshold": 0.65,
+      "adjusted_threshold": 0.65,
+      "position_multiplier": 1.0,
+      "stop_adjustment": 1.0
+    },
+    "momentum_strategy": {
+      "base_threshold": 0.6,
+      "adjusted_threshold": 0.6,
+      "position_multiplier": 1.0,
+      "stop_adjustment": 1.0
+    },
+    "mean_reversion_strategy": {
+      "base_threshold": 0.55,
+      "adjusted_threshold": 0.55,
+      "position_multiplier": 1.0,
+      "stop_adjustment": 1.0
+    },
+    "portfolio_rebalancing": {
+      "base_threshold": 0.45,
+      "adjusted_threshold": 0.45,
+      "position_multiplier": 1.0,
+      "stop_adjustment": 1.0
+    }
+  },
+  "recent_performance": {
+    "decision_summary": {
+      "period": "Last 24 hours",
+      "total_decisions": 4,
+      "approved_trades": 4,
+      "rejected_trades": 0,
+      "overall_approval_rate": 1.0,
+      "avg_confidence": 0.65,
+      "strategy_breakdown": {
+        "automated_signal_trading": {
+          "total": 1,
+          "approved": 1,
+          "avg_confidence": 0.75,
+          "approval_rate": 1.0
+        },
+        "momentum_strategy": {
+          "total": 1,
+          "approved": 1,
+          "avg_confidence": 0.68,
+          "approval_rate": 1.0
+        },
+        "mean_reversion_strategy": {
+          "total": 1,
+          "approved": 1,
+          "avg_confidence": 0.55,
+          "approval_rate": 1.0
+        },
+        "portfolio_rebalancing": {
+          "total": 1,
+          "approved": 1,
+          "avg_confidence": 0.62,
+          "approval_rate": 1.0
+        }
+      },
+      "rejection_reasons": {},
+      "risk_metrics_summary": {
+        "avg_portfolio_heat_impact": 0.002856,
+        "avg_risk_reward_ratio": 1.2500000000000002,
+        "total_portfolio_heat": 0.011424,
+        "max_single_trade_heat": 0.00468
+      }
+    },
+    "risk_dashboard": {
+      "overall_status": "HEALTHY - Normal Operations",
+      "risk_level": "low",
+      "active_alerts": 0
+    }
+  },
+  "optimization_impact": {
+    "estimated_risk_reduction": "60-80% vs unoptimized system",
+    "expected_sharpe_improvement": "0.3-0.5 points",
+    "max_drawdown_control": "<15% per strategy target",
+    "portfolio_heat_management": "25% maximum enforced"
+  }
+}
