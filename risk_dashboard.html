@@ -1,0 +1,114 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Integrated Risk Management Dashboard</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; }
+                .dashboard { max-width: 1200px; margin: 0 auto; }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                          color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+                .status-card { background: #ffc107; color: white; padding: 15px; 
+                               border-radius: 8px; margin-bottom: 20px; }
+                .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+                                gap: 20px; margin-bottom: 20px; }
+                .metric-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .metric-value { font-size: 2em; font-weight: bold; color: #333; }
+                .metric-label { color: #666; margin-top: 5px; }
+                .alerts { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; 
+                          border-radius: 8px; margin-bottom: 20px; }
+                .recommendations { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; 
+                                   border-radius: 8px; }
+                .strategy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+                                 gap: 15px; margin-top: 15px; }
+                .strategy-card { background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #007bff; }
+            </style>
+        </head>
+        <body>
+            <div class="dashboard">
+                <div class="header">
+                    <h1>🛡️ Integrated Risk Management Dashboard</h1>
+                    <p>Last Updated: 2025-08-08T13:23:37.765849</p>
+                </div>
+                
+                <div class="status-card">
+                    <h2>HEALTHY - Normal Operations</h2>
+                    <p>Risk Level: MEDIUM</p>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">1.8%</div>
+                        <div class="metric-label">Portfolio Heat</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">0</div>
+                        <div class="metric-label">Active Stop-Losses</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">$21,351</div>
+                        <div class="metric-label">Daily VaR</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">4</div>
+                        <div class="metric-label">Total Positions</div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h3>📊 Portfolio Summary</h3>
+                    <p><strong>Total Value:</strong> $100,000</p>
+                    <p><strong>Cash:</strong> 40.0%</p>
+                    <p><strong>Largest Position:</strong> SPY (25.0%)</p>
+                    <p><strong>Unrealized P&L:</strong> $606</p>
+                </div>
+                
+                <div class="metric-card">
+                    <h3>🎯 Strategy Performance</h3>
+                    <div class="strategy-grid">
+        
+                        <div class="strategy-card">
+                            <h4>Automated Signal Trading</h4>
+                            <p><strong>Grade:</strong> F</p>
+                            <p><strong>Recent Return:</strong> -2.1%</p>
+                            <p><strong>Positions:</strong> 1</p>
+                            <p><strong>Status:</strong> Needs Improvement</p>
+                        </div>
+            
+                        <div class="strategy-card">
+                            <h4>Momentum Strategy</h4>
+                            <p><strong>Grade:</strong> F</p>
+                            <p><strong>Recent Return:</strong> -1.8%</p>
+                            <p><strong>Positions:</strong> 1</p>
+                            <p><strong>Status:</strong> Needs Improvement</p>
+                        </div>
+            
+                        <div class="strategy-card">
+                            <h4>Mean Reversion Strategy</h4>
+                            <p><strong>Grade:</strong> F</p>
+                            <p><strong>Recent Return:</strong> +0.5%</p>
+                            <p><strong>Positions:</strong> 0</p>
+                            <p><strong>Status:</strong> Needs Improvement</p>
+                        </div>
+            
+                        <div class="strategy-card">
+                            <h4>Portfolio Rebalancing</h4>
+                            <p><strong>Grade:</strong> C</p>
+                            <p><strong>Recent Return:</strong> +1.2%</p>
+                            <p><strong>Positions:</strong> 3</p>
+                            <p><strong>Status:</strong> Acceptable</p>
+                        </div>
+            
+                    </div>
+                </div>
+        
+                <div class="recommendations">
+                    <h3>💡 Recommendations</h3>
+                    <ul>
+        <li>⚖️ Diversify portfolio - concentration risk is high</li><li>🎯 Ensure all positions have appropriate stop-losses</li><li>🔧 Implement unified risk management improvements (Phase 1 priority)</li><li>📊 Add dynamic confidence thresholds for automated trading</li><li>⏰ Consider shorter holding periods for momentum strategies</li>
+                    </ul>
+                </div>
+            </div>
+        </body>
+        </html>
+        

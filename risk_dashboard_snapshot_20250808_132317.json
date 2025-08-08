@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-08-08T13:23:17.314427",
+  "overall_status": "HEALTHY - Normal Operations",
+  "risk_level": "medium",
+  "portfolio_summary": {
+    "total_positions": 4,
+    "total_invested": "$60,000",
+    "total_value": "$100,000",
+    "cash_percentage": "40.0%",
+    "largest_position": "SPY (25.0%)",
+    "unrealized_pnl": "$606"
+  },
+  "risk_metrics": {
+    "portfolio_heat": "1.8%",
+    "concentration_risk": "52.0%",
+    "daily_var": "$21,351",
+    "portfolio_volatility": "12.9%",
+    "leverage_ratio": "60.0%"
+  },
+  "stop_loss_status": {
+    "active_stops": 0,
+    "triggered_today": 0,
+    "strategy_stats": {
+      "automated_signal_trading": {
+        "total_stops_triggered": 0,
+        "average_loss_pct": "N/A",
+        "active_stops": 0
+      },
+      "momentum_strategy": {
+        "total_stops_triggered": 0,
+        "average_loss_pct": "N/A",
+        "active_stops": 0
+      },
+      "mean_reversion_strategy": {
+        "total_stops_triggered": 0,
+        "average_loss_pct": "N/A",
+        "active_stops": 0
+      },
+      "portfolio_rebalancing": {
+        "total_stops_triggered": 0,
+        "average_loss_pct": "N/A",
+        "active_stops": 0
+      }
+    }
+  },
+  "strategy_performance": {
+    "automated_signal_trading": {
+      "positions": 1,
+      "performance_grade": "F",
+      "recent_return": "-2.1%",
+      "status": "Needs Improvement"
+    },
+    "momentum_strategy": {
+      "positions": 1,
+      "performance_grade": "F",
+      "recent_return": "-1.8%",
+      "status": "Needs Improvement"
+    },
+    "mean_reversion_strategy": {
+      "positions": 0,
+      "performance_grade": "F",
+      "recent_return": "+0.5%",
+      "status": "Needs Improvement"
+    },
+    "portfolio_rebalancing": {
+      "positions": 3,
+      "performance_grade": "C",
+      "recent_return": "+1.2%",
+      "status": "Acceptable"
+    }
+  },
+  "alerts": [],
+  "recommendations": [
+    "\u2696\ufe0f Diversify portfolio - concentration risk is high",
+    "\ud83c\udfaf Ensure all positions have appropriate stop-losses",
+    "\ud83d\udd27 Implement unified risk management improvements (Phase 1 priority)",
+    "\ud83d\udcca Add dynamic confidence thresholds for automated trading",
+    "\u23f0 Consider shorter holding periods for momentum strategies"
+  ]
+}
