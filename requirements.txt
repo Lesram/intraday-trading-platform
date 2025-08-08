@@ -2,6 +2,12 @@
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 websockets==12.0
+python-multipart==0.0.9
+pydantic==2.5.0
+
+# HTTP client and retries
+httpx==0.25.2
+tenacity==8.2.3
 
 # Trading and market data
 alpaca-trade-api==3.1.1
@@ -15,7 +21,6 @@ xgboost==2.0.1
 
 # Configuration and utilities
 python-dotenv==1.0.0
-pydantic==2.5.0
 
 # Data processing
 pytz==2023.3
