@@ -220,6 +220,7 @@ const TradingDashboard: React.FC = () => {
   const [signals, setSignals] = useState<TradingSignal[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [vixData, setVixData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
@@ -235,18 +236,20 @@ const TradingDashboard: React.FC = () => {
     try {
       console.log('🔄 Loading real-time trading data...');
       
-      // Load all data in parallel
-      const [healthData, signalsData, portfolioMetrics, positionsData] = await Promise.all([
+      // Load all data in parallel including VIX
+      const [healthData, signalsData, portfolioMetrics, positionsData, vixResponse] = await Promise.all([
         TradingApiService.getSystemHealth(),
         TradingApiService.getLatestSignals(5),
         TradingApiService.getPortfolioMetrics(),
         TradingApiService.getPositions(),
+        TradingApiService.getVixData(),
       ]);
 
-      setSystemHealth(healthData);
-      setSignals(signalsData);
-      setPortfolioData(portfolioMetrics);
-      setPositions(positionsData);
+      setSystemHealth(healthData as any);
+      setSignals(signalsData as any);
+      setPortfolioData(portfolioMetrics as any);
+      setPositions(positionsData as any);
+      setVixData(vixResponse.data);
       setLastUpdate(new Date().toLocaleTimeString());
       
       console.log('✅ Real-time data loaded successfully');
@@ -422,26 +425,45 @@ const TradingDashboard: React.FC = () => {
           <Grid container spacing={2}>
             {portfolioData && (
               <>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <RiskGauge
                     label="Portfolio Heat"
                     value={portfolioData.portfolio_heat}
                     limit={portfolioData.max_heat_limit}
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <RiskGauge
                     label="Portfolio VaR"
                     value={portfolioData.portfolio_var}
                     limit={portfolioData.max_var_limit}
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <RiskGauge
                     label="Current Drawdown"
                     value={portfolioData.current_drawdown}
                     limit={portfolioData.max_drawdown_limit}
                   />
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  {vixData && (
+                    <RiskGauge
+                      label="VIX Volatility"
+                      value={vixData.vix}
+                      limit={30}
+                      unit=""
+                      color={vixData.vix > 25 ? 'error' : vixData.vix > 20 ? 'warning' : 'primary'}
+                    />
+                  )}
+                  {!vixData && (
+                    <RiskGauge
+                      label="VIX Loading..."
+                      value={0}
+                      limit={30}
+                      unit=""
+                    />
+                  )}
                 </Grid>
               </>
             )}

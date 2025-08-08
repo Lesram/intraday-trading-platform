@@ -1595,12 +1595,12 @@ async def get_trading_signals(limit: int = 5):
             "count": len(signals),
             "market_data_available": real_data_available,
             "market_info": {
-                "is_open": market_info['is_market_open'],
-                "status": market_info['market_status'],
+                "is_open": market_info['is_open'],
+                "status": market_info['status'],
                 "data_type": market_info['data_type'],
-                "session": market_info['trading_session']
+                "session": "regular" if market_info['is_open'] else "closed"
             },
-            "note": None if is_live_data else f"Last available data - Market is {market_info['market_status']}"
+            "note": None if is_live_data else f"Last available data - Market is {market_info['status']}"
         }
         
     except Exception as e:
@@ -1876,7 +1876,7 @@ async def get_ml_prediction_analysis(symbol: str):
             'prices': [features['current_price'] - 1, features['current_price']],
             'volumes': [1000000, int(1000000 * features['volume_ratio'])],
             'rsi': features['rsi'],
-            'vix_proxy': 18.5,
+            'vix_proxy': get_current_vix(alpaca_client),  # Real VIX data instead of hardcoded 18.5
             'market_trend': features['price_change']
         }
         
