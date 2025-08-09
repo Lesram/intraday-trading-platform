@@ -50,7 +50,9 @@ async def get_metrics():
 
     except Exception as e:
         logger.error(f"❌ Metrics export failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Metrics export failed: {str(e)}") from e
+        raise HTTPException(
+            status_code=500, detail=f"Metrics export failed: {str(e)}"
+        ) from e
 
 
 @app.get("/metrics/summary")

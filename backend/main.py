@@ -22,7 +22,7 @@ logger = get_structured_logger("backend.main")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Application lifespan context manager"""
     # Startup
     logger.info("🚀 Starting Intraday Trading Platform")

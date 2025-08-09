@@ -11,12 +11,23 @@ from datetime import datetime
 from typing import Any
 
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from infra.logging import get_structured_logger
 from infra.settings import settings
 
-from .errors import *
+from .errors import (
+    AlpacaConnectionError,
+    AlpacaDataError,
+    AlpacaError,
+    AlpacaRateLimitError,
+    map_alpaca_error,
+)
 
 logger = get_structured_logger("adapters.alpaca")
 
@@ -24,6 +35,7 @@ logger = get_structured_logger("adapters.alpaca")
 @dataclass
 class AlpacaOrder:
     """Alpaca order response"""
+
     id: str
     symbol: str
     side: str
@@ -38,6 +50,7 @@ class AlpacaOrder:
 @dataclass
 class AlpacaPosition:
     """Alpaca position response"""
+
     symbol: str
     qty: float
     market_value: float
@@ -50,6 +63,7 @@ class AlpacaPosition:
 @dataclass
 class AlpacaAccount:
     """Alpaca account response"""
+
     account_number: str
     status: str
     buying_power: float
@@ -74,23 +88,20 @@ class AlpacaClient:
 
         # HTTP client configuration
         self.timeout = httpx.Timeout(
-            connect=5.0,    # Connection timeout
-            read=30.0,      # Read timeout
-            write=10.0,     # Write timeout
-            pool=60.0       # Total timeout
+            connect=5.0,  # Connection timeout
+            read=30.0,  # Read timeout
+            write=10.0,  # Write timeout
+            pool=60.0,  # Total timeout
         )
 
-        self.limits = httpx.Limits(
-            max_keepalive_connections=20,
-            max_connections=100
-        )
+        self.limits = httpx.Limits(max_keepalive_connections=20, max_connections=100)
 
         # Headers for authentication
         self.headers = {
             "APCA-API-KEY-ID": self.api_key,
             "APCA-API-SECRET-KEY": self.secret_key,
             "Content-Type": "application/json",
-            "User-Agent": f"IntraDay-Trading-Platform/{settings.version}"
+            "User-Agent": f"IntraDay-Trading-Platform/{settings.version}",
         }
 
         self.client = None
@@ -102,7 +113,7 @@ class AlpacaClient:
             base_url=self.base_url,
             headers=self.headers,
             timeout=self.timeout,
-            limits=self.limits
+            limits=self.limits,
         )
         return self
 
@@ -114,9 +125,13 @@ class AlpacaClient:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((httpx.RequestError, AlpacaConnectionError, AlpacaRateLimitError))
+        retry=retry_if_exception_type(
+            (httpx.RequestError, AlpacaConnectionError, AlpacaRateLimitError)
+        ),
     )
-    async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict[str, Any]:
+    async def _make_request(
+        self, method: str, endpoint: str, **kwargs
+    ) -> dict[str, Any]:
         """Make HTTP request with retries and error handling"""
 
         if not self.client:
@@ -136,7 +151,7 @@ class AlpacaClient:
                 # Parse error response
                 try:
                     error_data = response.json()
-                except:
+                except (ValueError, json.JSONDecodeError):
                     error_data = {"message": response.text, "code": "PARSE_ERROR"}
 
                 # Map to specific exception
@@ -144,16 +159,22 @@ class AlpacaClient:
 
         except httpx.RequestError as e:
             logger.error(f"Alpaca request error: {e}")
-            raise AlpacaConnectionError(f"Network error: {str(e)}")
+            raise AlpacaConnectionError(f"Network error: {str(e)}") from e
         except json.JSONDecodeError as e:
             logger.error(f"JSON decode error: {e}")
-            raise AlpacaDataError(f"Invalid JSON response: {str(e)}")
+            raise AlpacaDataError(f"Invalid JSON response: {str(e)}") from e
 
-    async def submit_order(self, symbol: str, side: str, qty: float,
-                          order_type: str = "market", time_in_force: str = "day",
-                          limit_price: float | None = None,
-                          stop_price: float | None = None,
-                          client_order_id: str | None = None) -> AlpacaOrder:
+    async def submit_order(
+        self,
+        symbol: str,
+        side: str,
+        qty: float,
+        order_type: str = "market",
+        time_in_force: str = "day",
+        limit_price: float | None = None,
+        stop_price: float | None = None,
+        client_order_id: str | None = None,
+    ) -> AlpacaOrder:
         """Submit an order with idempotency"""
 
         # Generate idempotency key if not provided
@@ -166,7 +187,7 @@ class AlpacaClient:
             "qty": str(qty),
             "type": order_type,
             "time_in_force": time_in_force,
-            "client_order_id": client_order_id
+            "client_order_id": client_order_id,
         }
 
         if limit_price:
@@ -178,7 +199,9 @@ class AlpacaClient:
 
         response_data = await self._make_request("POST", "/v2/orders", json=order_data)
 
-        logger.info(f"✅ Order submitted: {response_data.get('id')} - Status: {response_data.get('status')}")
+        logger.info(
+            f"✅ Order submitted: {response_data.get('id')} - Status: {response_data.get('status')}"
+        )
 
         return AlpacaOrder(
             id=response_data["id"],
@@ -187,9 +210,19 @@ class AlpacaClient:
             qty=float(response_data["qty"]),
             order_type=response_data["type"],
             status=response_data["status"],
-            submitted_at=datetime.fromisoformat(response_data["submitted_at"].replace("Z", "+00:00")),
-            filled_avg_price=float(response_data["filled_avg_price"]) if response_data.get("filled_avg_price") else None,
-            filled_qty=float(response_data["filled_qty"]) if response_data.get("filled_qty") else None
+            submitted_at=datetime.fromisoformat(
+                response_data["submitted_at"].replace("Z", "+00:00")
+            ),
+            filled_avg_price=(
+                float(response_data["filled_avg_price"])
+                if response_data.get("filled_avg_price")
+                else None
+            ),
+            filled_qty=(
+                float(response_data["filled_qty"])
+                if response_data.get("filled_qty")
+                else None
+            ),
         )
 
     async def cancel_order(self, order_id: str) -> bool:
@@ -219,7 +252,9 @@ class AlpacaClient:
             portfolio_value=float(response_data["portfolio_value"]),
             day_trade_count=int(response_data["daytrade_count"]),
             pattern_day_trader=response_data["pattern_day_trader"],
-            last_equity=float(response_data.get("last_equity", response_data["equity"]))
+            last_equity=float(
+                response_data.get("last_equity", response_data["equity"])
+            ),
         )
 
     async def get_positions(self) -> list[AlpacaPosition]:
@@ -228,21 +263,23 @@ class AlpacaClient:
 
         positions = []
         for pos_data in response_data:
-            positions.append(AlpacaPosition(
-                symbol=pos_data["symbol"],
-                qty=float(pos_data["qty"]),
-                market_value=float(pos_data["market_value"]),
-                avg_entry_price=float(pos_data["avg_entry_price"]),
-                unrealized_pl=float(pos_data["unrealized_pl"]),
-                unrealized_plpc=float(pos_data["unrealized_plpc"]),
-                side=pos_data["side"]
-            ))
+            positions.append(
+                AlpacaPosition(
+                    symbol=pos_data["symbol"],
+                    qty=float(pos_data["qty"]),
+                    market_value=float(pos_data["market_value"]),
+                    avg_entry_price=float(pos_data["avg_entry_price"]),
+                    unrealized_pl=float(pos_data["unrealized_pl"]),
+                    unrealized_plpc=float(pos_data["unrealized_plpc"]),
+                    side=pos_data["side"],
+                )
+            )
 
         return positions
 
-    async def get_orders(self, status: str | None = None,
-                        since: datetime | None = None,
-                        limit: int = 50) -> list[AlpacaOrder]:
+    async def get_orders(
+        self, status: str | None = None, since: datetime | None = None, limit: int = 50
+    ) -> list[AlpacaOrder]:
         """Get orders with optional filtering"""
 
         params = {"limit": str(limit)}
@@ -255,17 +292,29 @@ class AlpacaClient:
 
         orders = []
         for order_data in response_data:
-            orders.append(AlpacaOrder(
-                id=order_data["id"],
-                symbol=order_data["symbol"],
-                side=order_data["side"],
-                qty=float(order_data["qty"]),
-                order_type=order_data["type"],
-                status=order_data["status"],
-                submitted_at=datetime.fromisoformat(order_data["submitted_at"].replace("Z", "+00:00")),
-                filled_avg_price=float(order_data["filled_avg_price"]) if order_data.get("filled_avg_price") else None,
-                filled_qty=float(order_data["filled_qty"]) if order_data.get("filled_qty") else None
-            ))
+            orders.append(
+                AlpacaOrder(
+                    id=order_data["id"],
+                    symbol=order_data["symbol"],
+                    side=order_data["side"],
+                    qty=float(order_data["qty"]),
+                    order_type=order_data["type"],
+                    status=order_data["status"],
+                    submitted_at=datetime.fromisoformat(
+                        order_data["submitted_at"].replace("Z", "+00:00")
+                    ),
+                    filled_avg_price=(
+                        float(order_data["filled_avg_price"])
+                        if order_data.get("filled_avg_price")
+                        else None
+                    ),
+                    filled_qty=(
+                        float(order_data["filled_qty"])
+                        if order_data.get("filled_qty")
+                        else None
+                    ),
+                )
+            )
 
         return orders
 
@@ -280,7 +329,17 @@ class AlpacaClient:
             qty=float(response_data["qty"]),
             order_type=response_data["type"],
             status=response_data["status"],
-            submitted_at=datetime.fromisoformat(response_data["submitted_at"].replace("Z", "+00:00")),
-            filled_avg_price=float(response_data["filled_avg_price"]) if response_data.get("filled_avg_price") else None,
-            filled_qty=float(response_data["filled_qty"]) if response_data.get("filled_qty") else None
+            submitted_at=datetime.fromisoformat(
+                response_data["submitted_at"].replace("Z", "+00:00")
+            ),
+            filled_avg_price=(
+                float(response_data["filled_avg_price"])
+                if response_data.get("filled_avg_price")
+                else None
+            ),
+            filled_qty=(
+                float(response_data["filled_qty"])
+                if response_data.get("filled_qty")
+                else None
+            ),
         )

@@ -10,12 +10,12 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     """Application settings with environment variable support"""
-    
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "case_sensitive": False,
-        "extra": "allow"  # Allow extra environment variables
+        "extra": "allow",  # Allow extra environment variables
     }
 
     # Application
@@ -33,8 +33,7 @@ class Settings(BaseSettings):
     secret_key: str = Field(env="SECRET_KEY", default="your-secret-key-here")
     allowed_hosts: list[str] = Field(default=["*"], env="ALLOWED_HOSTS")
     cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:3003"],
-        env="CORS_ORIGINS"
+        default=["http://localhost:3000", "http://localhost:3003"], env="CORS_ORIGINS"
     )
 
     # Database (if needed)
@@ -44,8 +43,7 @@ class Settings(BaseSettings):
     alpaca_api_key: str = Field(default="test_key", env="APCA_API_KEY_ID")
     alpaca_secret_key: str = Field(default="test_secret", env="APCA_API_SECRET_KEY")
     alpaca_base_url: str = Field(
-        default="https://paper-api.alpaca.markets",
-        env="APCA_API_BASE_URL"
+        default="https://paper-api.alpaca.markets", env="APCA_API_BASE_URL"
     )
 
     # Risk Management
@@ -55,8 +53,12 @@ class Settings(BaseSettings):
     max_drawdown_limit: float = Field(default=0.15, env="MAX_DRAWDOWN_LIMIT")
 
     # ML Model Configuration
-    model_update_interval: int = Field(default=3600, env="MODEL_UPDATE_INTERVAL")  # seconds
-    prediction_confidence_threshold: float = Field(default=0.65, env="PREDICTION_CONFIDENCE_THRESHOLD")
+    model_update_interval: int = Field(
+        default=3600, env="MODEL_UPDATE_INTERVAL"
+    )  # seconds
+    prediction_confidence_threshold: float = Field(
+        default=0.65, env="PREDICTION_CONFIDENCE_THRESHOLD"
+    )
 
     # Logging
     log_level: str = Field(default="INFO", env="LOG_LEVEL")

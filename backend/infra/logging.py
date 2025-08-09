@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-📝 STRUCTURED LOGGING CONFIGURATION  
+📝 STRUCTURED LOGGING CONFIGURATION
 Request ID tracking and JSON structured logging for FastAPI
 """
 
@@ -16,7 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 # Context variable for request ID tracking
-request_id_context: ContextVar[str | None] = ContextVar('request_id', default=None)
+request_id_context: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -56,7 +56,7 @@ class StructuredFormatter(logging.Formatter):
             "message": record.getMessage(),
             "module": record.module,
             "function": record.funcName,
-            "line": record.lineno
+            "line": record.lineno,
         }
 
         # Add request ID if available
@@ -69,13 +69,31 @@ class StructuredFormatter(logging.Formatter):
             log_entry["exception"] = self.formatException(record.exc_info)
 
         # Add extra fields from record
-        if hasattr(record, '__dict__'):
+        if hasattr(record, "__dict__"):
             for key, value in record.__dict__.items():
-                if key not in ['name', 'msg', 'args', 'levelname', 'levelno',
-                              'pathname', 'filename', 'module', 'lineno',
-                              'funcName', 'created', 'msecs', 'relativeCreated',
-                              'thread', 'threadName', 'processName', 'process',
-                              'stack_info', 'exc_info', 'exc_text', 'message']:
+                if key not in [
+                    "name",
+                    "msg",
+                    "args",
+                    "levelname",
+                    "levelno",
+                    "pathname",
+                    "filename",
+                    "module",
+                    "lineno",
+                    "funcName",
+                    "created",
+                    "msecs",
+                    "relativeCreated",
+                    "thread",
+                    "threadName",
+                    "processName",
+                    "process",
+                    "stack_info",
+                    "exc_info",
+                    "exc_text",
+                    "message",
+                ]:
                     log_entry[key] = value
 
         return json.dumps(log_entry, default=str)
@@ -150,7 +168,7 @@ def log_trade_event(event_type: str, symbol: str, **kwargs) -> None:
         "event_type": event_type,
         "symbol": symbol,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        **kwargs
+        **kwargs,
     }
 
     logger.info(f"Trade Event: {event_type}", extra=log_data)
@@ -163,7 +181,7 @@ def log_risk_event(event_type: str, **kwargs) -> None:
     log_data = {
         "event_type": event_type,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        **kwargs
+        **kwargs,
     }
 
     logger.info(f"Risk Event: {event_type}", extra=log_data)
@@ -177,7 +195,7 @@ def log_performance_metric(metric_name: str, value: float, **kwargs) -> None:
         "metric_name": metric_name,
         "value": value,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        **kwargs
+        **kwargs,
     }
 
     logger.info(f"Performance Metric: {metric_name}={value}", extra=log_data)
