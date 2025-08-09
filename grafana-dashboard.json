@@ -1,0 +1,286 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Trading Platform - Layer 2 Observability",
+    "tags": ["trading", "prometheus", "layer2"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "broker_connection_status",
+            "legendFormat": "Broker Connection"
+          },
+          {
+            "expr": "risk_service_status", 
+            "legendFormat": "Risk Service"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Orders Submitted (Rate)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(orders_submitted_total[5m])",
+            "legendFormat": "{{symbol}} {{side}}"
+          }
+        ],
+        "yAxes": [
+          {"label": "Orders/sec", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Order Fill Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(orders_filled_total[5m]) / rate(orders_submitted_total[5m])",
+            "legendFormat": "Fill Rate"
+          }
+        ],
+        "yAxes": [
+          {"label": "Fill Rate %", "min": 0, "max": 1}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Risk Blocks",
+        "type": "graph", 
+        "targets": [
+          {
+            "expr": "rate(risk_blocks_total[5m])",
+            "legendFormat": "{{reason}} - {{severity}}"
+          }
+        ],
+        "yAxes": [
+          {"label": "Blocks/sec", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Order Submission Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(order_submit_latency_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(order_submit_latency_seconds_bucket[5m]))",
+            "legendFormat": "P50"
+          }
+        ],
+        "yAxes": [
+          {"label": "Latency (seconds)", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Risk Check Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(risk_check_latency_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(risk_check_latency_seconds_bucket[5m]))",
+            "legendFormat": "P50"
+          }
+        ],
+        "yAxes": [
+          {"label": "Latency (seconds)", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Portfolio Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "portfolio_value_usd",
+            "legendFormat": "Portfolio Value"
+          },
+          {
+            "expr": "buying_power_usd",
+            "legendFormat": "Buying Power"
+          }
+        ],
+        "yAxes": [
+          {"label": "USD", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "Daily P&L",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "daily_pnl_usd",
+            "legendFormat": "Daily P&L"
+          }
+        ],
+        "yAxes": [
+          {"label": "USD"}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 9,
+        "title": "Position Count",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "position_count",
+            "legendFormat": "Open Positions"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 32}
+      },
+      {
+        "id": 10,
+        "title": "Portfolio Heat",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "portfolio_heat",
+            "legendFormat": "Heat Ratio"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 0.2},
+                {"color": "red", "value": 0.5}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 32}
+      },
+      {
+        "id": 11,
+        "title": "Market Data Lag",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "market_data_lag_seconds",
+            "legendFormat": "{{source}}"
+          }
+        ],
+        "yAxes": [
+          {"label": "Lag (seconds)", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32}
+      },
+      {
+        "id": 12,
+        "title": "Broker API Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(broker_api_latency_seconds_bucket[5m]))",
+            "legendFormat": "{{endpoint}} P95"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(broker_api_latency_seconds_bucket[5m]))",
+            "legendFormat": "{{endpoint}} P50"
+          }
+        ],
+        "yAxes": [
+          {"label": "Latency (seconds)", "min": 0}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 40}
+      },
+      {
+        "id": 13,
+        "title": "Order Rejection Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(orders_rejected_total[5m]) / rate(orders_submitted_total[5m])",
+            "legendFormat": "Rejection Rate"
+          }
+        ],
+        "yAxes": [
+          {"label": "Rejection Rate %", "min": 0, "max": 1}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 40}
+      },
+      {
+        "id": 14,
+        "title": "Top Risk Block Reasons",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "topk(5, sum by(reason) (risk_blocks_total))",
+            "legendFormat": "{{reason}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 48}
+      },
+      {
+        "id": 15,
+        "title": "Trading Activity by Symbol",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "sum by(symbol) (orders_submitted_total)",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 48}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s",
+    "schemaVersion": 27,
+    "version": 1
+  },
+  "meta": {
+    "type": "dashboard",
+    "canSave": true,
+    "canEdit": true,
+    "canAdmin": true,
+    "canStar": true,
+    "slug": "trading-platform-layer2",
+    "url": "/d/trading-platform-layer2/trading-platform-layer-2-observability",
+    "expires": "0001-01-01T00:00:00Z",
+    "created": "2025-08-08T17:00:00Z",
+    "updated": "2025-08-08T17:00:00Z",
+    "updatedBy": "admin",
+    "createdBy": "admin",
+    "version": 1
+  }
+}

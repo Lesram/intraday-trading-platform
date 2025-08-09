@@ -1,94 +1,92 @@
-# 🚀 Institutional Trading Platform - Production Ready
+# 🚀 Institutional Trading Platform - Layer 2 Production Architecture
 
 ## 🎯 Overview
-A streamlined, production-ready institutional trading platform with ML predictions, real-time monitoring, and comprehensive risk management.
+A production-ready institutional algorithmic trading platform with unified backtest/live execution parity, comprehensive observability, and enterprise-grade infrastructure.
 
-## ✨ Key Features
+## ✨ Layer 2 Architecture Features
 
-### 🤖 Core Trading System
-- **Alpaca Paper Trading Integration** - Real market data and execution
-- **ML-Powered Predictions** - LSTM, XGBoost, Random Forest ensemble
-- **Real-time WebSocket Updates** - Live portfolio and market data
-- **Institutional-Grade API** - FastAPI with comprehensive endpoints
+### 🏗️ **What Changed - New Modular Backend**
+**BREAKING CHANGE**: The platform has been completely restructured with a new modular backend architecture.
 
-### 📊 Advanced Analytics
-- **Multi-timeframe Analysis** - Comprehensive technical analysis
-- **Risk Management** - Portfolio heat, VaR, drawdown monitoring
-- **Performance Tracking** - Sharpe ratio, win rate, profit factor
-- **Health Monitoring** - System integrity and model status
-- **Real-Time Execution**: Live trading with actual market data
-- **Risk Management**: Vector Kelly sizing, VaR calculations, portfolio heat monitoring
+- **New Entry Point**: `uvicorn backend.main:app --port 8002` (was `python simple_api_gateway.py` on 8001)
+- **Modular Structure**: Clean separation of concerns with `backend/{services,adapters,infra,api}`
+- **Execution Parity**: Identical codepath for backtest and live trading via `StrategyRunner`
+- **Full Observability**: Prometheus metrics with `/metrics` endpoint for production monitoring
 
-### ✅ Strategic Priorities (100% Complete)
-1. **Live Trading Deployment**: Real capital deployment with comprehensive safety controls
-2. **Cryptocurrency Integration**: 24/7 crypto trading with multi-exchange support
-3. **Adaptive Learning**: Automated model retraining and drift detection
+### 🎯 **Core Layer 2 Components**
 
-### ✅ Real-Time Dashboard
-- **Live Data Integration**: No mock data - all real-time API connections
-- **WebSocket Updates**: Real-time portfolio and signal updates
-- **Professional UI**: Material-UI React TypeScript interface
-- **System Health Monitoring**: Service status and performance tracking
+#### **Phase A: Parity & Simulation**
+- **StrategyRunner** - Unified execution engine ensuring identical behavior between backtest and live trading
+- **FillSimulatorAdapter** - Realistic execution simulation with slippage and commission modeling
+- **Event-Driven Architecture** - Pub/sub system for real-time monitoring and testing
 
-## 🚀 Quick Start
+#### **Phase B: Observability & Metrics** 
+- **Prometheus Integration** - Complete metrics infrastructure for production monitoring
+- **FastAPI Metrics Endpoints** - `/metrics`, `/health` endpoints ready for Grafana/Prometheus scraping
+- **Automatic Tracking** - Order flow, risk decisions, latency measurement built into trading flow
+
+### 🚀 Quick Start (Updated)
 
 ### Prerequisites
 - Python 3.8+
-- Node.js 16+
-- Docker (optional)
+- Docker (recommended for production)
 
-### 1. Start API Gateway
+### 1. Start New Backend API
 ```bash
-python simple_api_gateway.py
+# Option 1: Direct Python
+cd backend
+uvicorn main:app --port 8002 --reload
+
+# Option 2: From root directory  
+uvicorn backend.main:app --port 8002 --reload
 ```
-**API Available at**: http://localhost:8001
+**API Available at**: http://localhost:8002
 
-### 2. Start Trading Dashboard
-```bash
-cd trading-dashboard
-npm install
-npm run dev
-```
-**Dashboard Available at**: http://localhost:3003
+### 2. Access New Endpoints
+- 📋 **API Documentation**: http://localhost:8002/docs  
+- 🔗 **Health Check**: http://localhost:8002/api/health
+- 📊 **Prometheus Metrics**: http://localhost:8002/metrics
+- 📡 **WebSocket**: ws://localhost:8002/ws
+- 📈 **Trading API**: http://localhost:8002/api/trading/*
 
-### 3. Access Points
-- 🌐 **Trading Dashboard**: http://localhost:3003
-- 📋 **API Documentation**: http://localhost:8001/docs
-- 🔗 **Health Check**: http://localhost:8001/api/health
-- 📡 **WebSocket**: ws://localhost:8001/ws
+## 📊 New Layer 2 System Architecture
 
-## 📊 System Architecture
+### Backend Services (New Modular Structure)
+- **StrategyRunner** (`backend/services/strategy_runner.py`): Unified backtest/live execution engine
+- **Metrics Infrastructure** (`backend/infra/metrics.py`): Prometheus observability system
+- **Fill Simulation** (`backend/adapters/fill_simulator.py`): Realistic execution modeling
+- **Trading API** (`backend/api/routers/trading.py`): RESTful trading endpoints
+- **Health & Monitoring** (`backend/api/routers/health.py`): System status and diagnostics
 
-### Backend Services
-- **Core Trading Engine** (`runfile.py`): Main trading logic and AI models
-- **Live Trading Module** (`live_trading_deployment.py`): Real money execution
-- **Crypto Integration** (`crypto_integration.py`): 24/7 cryptocurrency support
-- **Adaptive Learning** (`adaptive_learning_system.py`): Model optimization
-- **API Gateway** (`simple_api_gateway.py`): Unified data access
+### Legacy Components (Still Available)
+- **Core Trading Engine** (`runfile.py`): Original trading logic and AI models
+- **Live Trading Module** (`live_trading_deployment.py`): Direct execution interface
+- **Crypto Integration** (`crypto_integration.py`): Cryptocurrency support
+- **API Gateway** (`simple_api_gateway.py`): Legacy unified data access (deprecated)
 
-### Frontend
-- **React TypeScript Dashboard**: Professional trading interface
-- **Real-Time Data**: WebSocket connections for live updates
-- **Material-UI Components**: Professional design system
+### Testing & Quality Assurance
+- **Comprehensive Test Suite** (`tests/`): 25+ integration and unit tests
+- **Parity Regression Tests** (`tests/test_parity_regression.py`): Backtest/live validation
+- **Metrics Integration Tests** (`tests/test_metrics_integration.py`): Observability validation
 
 ### Infrastructure
-- **Docker/Kubernetes**: Container orchestration
-- **Microservices**: Scalable service architecture
-- **Monitoring**: Prometheus/Grafana integration
+- **Docker Ready**: Container orchestration prepared
+- **Prometheus/Grafana**: Production monitoring stack
+- **CI/CD Pipeline**: Automated testing and deployment (in progress)
 
-## 🔧 API Endpoints
+## 🔧 Updated API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/health` | System health status |
+| GET | `/api/health` | Comprehensive system health status |
+| GET | `/metrics` | Prometheus metrics for monitoring |
+| GET | `/api/trading/positions` | Current trading positions |
+| POST | `/api/trading/orders` | Submit trading orders |
 | GET | `/api/signals/latest` | Latest trading signals |
-| GET | `/api/portfolio/metrics` | Portfolio performance |
-| GET | `/api/positions` | Current positions |
-| GET | `/api/crypto/markets` | Cryptocurrency data |
-| POST | `/api/trading/mode` | Set trading mode |
-| WS | `/ws` | Real-time updates |
+| GET | `/api/portfolio/metrics` | Portfolio performance metrics |
+| WS | `/ws` | Real-time WebSocket updates |
 
-## 🔐 Configuration
+## 🔐 Configuration (Updated)
 
 ### Environment Setup
 Create `.env` file with your API keys:
