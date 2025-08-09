@@ -1,0 +1,72 @@
+# .dockerignore - Exclude unnecessary files from Docker build context
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env.local
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+*.cover
+.hypothesis/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+
+# Development files
+.env.development
+.env.test
+
+# CI/CD
+.github/
+
+# Legacy files
+legacy/
+simple_*
+
+# Test artifacts
+test-report-*
+junit-*
+coverage-*
+htmlcov-*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

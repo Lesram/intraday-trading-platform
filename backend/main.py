@@ -30,6 +30,10 @@ async def lifespan(app: FastAPI):
     try:
         # Initialize components
         logger.info("📡 Initializing trading systems...")
+        
+        # Initialize HTTP client manager
+        from infra.http_client import http_manager
+        await http_manager.initialize()
 
         # Here we would initialize:
         # - Database connections
@@ -47,6 +51,10 @@ async def lifespan(app: FastAPI):
     finally:
         # Shutdown
         logger.info("🛑 Shutting down trading platform...")
+        
+        # Close HTTP client
+        from infra.http_client import http_manager
+        await http_manager.close()
 
         # Cleanup:
         # - Close database connections

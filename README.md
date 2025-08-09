@@ -28,8 +28,8 @@ A production-ready institutional algorithmic trading platform with unified backt
 ### 🚀 Quick Start (Updated)
 
 ### Prerequisites
-- Python 3.8+
-- Docker (recommended for production)
+- Python 3.11+ (recommended for optimal performance with modern FastAPI/Pydantic v2)
+- Docker (recommended for production deployment)
 
 ### 1. Start New Backend API
 ```bash
