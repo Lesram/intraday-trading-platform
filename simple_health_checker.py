@@ -5,14 +5,11 @@ Simple health endpoint fix - replace the broken comprehensive check
 
 import asyncio
 import logging
-import json
-from datetime import datetime
-from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
 class SimpleHealthResponse:
-    def __init__(self, service: str, status: str, response_time: float = 0, details: Dict = None):
+    def __init__(self, service: str, status: str, response_time: float = 0, details: dict = None):
         self.service = service
         self.status = status
         self.response_time = response_time
@@ -21,25 +18,25 @@ class SimpleHealthResponse:
 async def get_simple_system_health():
     """Simplified system health check that actually works"""
     logger.info("📊 Running simplified health check")
-    
+
     health_data = []
-    
+
     # Basic ML Models Check
     try:
         # Check if model files exist and are accessible
         import os
         model_files = [
             'rf_ensemble_v2.pkl',
-            'xgb_ensemble_v2.pkl', 
+            'xgb_ensemble_v2.pkl',
             'lstm_ensemble_best.keras',
             'feature_scaler_v2.gz'
         ]
-        
+
         existing_models = 0
         for model_file in model_files:
             if os.path.exists(model_file) and os.path.getsize(model_file) > 0:
                 existing_models += 1
-        
+
         # Try to access the global ML predictor if available
         models_operational = False
         try:
@@ -49,7 +46,7 @@ async def get_simple_system_health():
                 models_operational = True
         except:
             pass
-        
+
         health_data.append(SimpleHealthResponse(
             service="ML Models",
             status="healthy" if existing_models >= 3 else ("degraded" if existing_models > 0 else "offline"),
@@ -68,24 +65,25 @@ async def get_simple_system_health():
             response_time=0,
             details={"error": str(e), "using_real_data": False, "models_loaded": 0}
         ))
-    
+
     # Alpaca API Check
     try:
         import os
+
         from dotenv import load_dotenv
-        
+
         # Load environment variables
         load_dotenv()
-        
+
         # Check for API credentials (using CORRECT Alpaca variable names!)
         api_key = os.getenv('APCA_API_KEY_ID')
         api_secret = os.getenv('APCA_API_SECRET_KEY')
         base_url = os.getenv('APCA_API_BASE_URL', 'https://paper-api.alpaca.markets')
-        
-        credentials_exist = bool(api_key and api_secret and 
+
+        credentials_exist = bool(api_key and api_secret and
                                 api_key != 'your_paper_trading_api_key_here' and
                                 api_secret != 'your_paper_trading_secret_key_here')
-        
+
         # If credentials exist, try to test connection
         connection_test = False
         if credentials_exist:
@@ -96,9 +94,9 @@ async def get_simple_system_health():
                 connection_test = True
             except Exception as conn_error:
                 logger.warning(f"Alpaca connection test failed: {conn_error}")
-        
+
         status = "healthy" if connection_test else ("degraded" if credentials_exist else "offline")
-        
+
         health_data.append(SimpleHealthResponse(
             service="Alpaca Trading API",
             status=status,
@@ -118,7 +116,7 @@ async def get_simple_system_health():
             response_time=0,
             details={"error": str(e), "api_connection": False, "credentials_configured": False}
         ))
-    
+
     # Market Data Pipeline Check
     health_data.append(SimpleHealthResponse(
         service="Market Data Pipeline",
@@ -130,7 +128,7 @@ async def get_simple_system_health():
             "feature_engineering_ok": True
         }
     ))
-    
+
     # System Performance Check
     health_data.append(SimpleHealthResponse(
         service="System Performance",
@@ -142,7 +140,7 @@ async def get_simple_system_health():
             "system_responsive": True
         }
     ))
-    
+
     return health_data
 
 # Convert to dict format for JSON response
@@ -164,5 +162,5 @@ if __name__ == "__main__":
         health = await get_simple_system_health()
         for h in health:
             print(f"{h.service}: {h.status} - {h.details}")
-    
+
     asyncio.run(test())

@@ -4,12 +4,53 @@ __pycache__/
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 .env
+
+# Testing and coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# Linting
+.ruff_cache/
 
 # Node.js
 node_modules/
@@ -19,7 +60,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Build outputs
-dist/
 build/
 
 # IDE
@@ -48,6 +88,25 @@ logs/
 # Cache
 .cache/
 .parcel-cache/
+
+# Trading specific
+*.csv
+*.xlsx
+*.xls
+data/
+temp/
+backtest_results/
+portfolio_snapshots/
+
+# Secrets and API keys
+*.key
+*.pem
+secrets.json
+api_keys.json
+.secrets/
+
+# Jupyter Notebook
+.ipynb_checkpoints
 
 # Temporary files
 *.tmp

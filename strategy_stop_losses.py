@@ -5,20 +5,20 @@ Phase 1 Optimization: Implementing unified stop-losses across all strategies
 Part of Audit Item 4: Trading Strategy Reevaluation
 """
 
-import sys
-import os
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
 import asyncio
+import logging
+import os
+import sys
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
-# Add current directory to Python path  
+# Add current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import our unified risk manager
-from unified_risk_manager import get_risk_manager, PositionRisk
+from unified_risk_manager import get_risk_manager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class StopLossType(Enum):
     """Types of stop-loss mechanisms"""
     FIXED_PERCENTAGE = "fixed_percentage"
-    VOLATILITY_ADJUSTED = "volatility_adjusted" 
+    VOLATILITY_ADJUSTED = "volatility_adjusted"
     TRAILING_STOP = "trailing_stop"
     TIME_BASED = "time_based"
     ATR_BASED = "atr_based"
@@ -41,22 +41,22 @@ class StopLossOrder:
     created_at: datetime
     strategy: str
     original_entry_price: float
-    current_price: Optional[float] = None
+    current_price: float | None = None
     triggered: bool = False
-    trigger_time: Optional[datetime] = None
+    trigger_time: datetime | None = None
 
 class StrategyStopLossManager:
     """Manages stop-losses for all trading strategies with unified risk management"""
-    
+
     def __init__(self):
         self.risk_manager = get_risk_manager()
         self.active_stops = {}  # symbol -> StopLossOrder
         self.stop_loss_history = []
         self.strategy_configs = self._initialize_strategy_configs()
-        
+
         logger.info("🎯 Strategy Stop-Loss Manager initialized with unified risk management")
-    
-    def _initialize_strategy_configs(self) -> Dict[str, Dict]:
+
+    def _initialize_strategy_configs(self) -> dict[str, dict]:
         """Initialize stop-loss configurations for each strategy"""
         return {
             "automated_signal_trading": {
@@ -92,14 +92,14 @@ class StrategyStopLossManager:
                 "correlation_adjustment": True   # Adjust based on portfolio correlation
             }
         }
-    
-    async def create_stop_loss(self, symbol: str, entry_price: float, strategy: str, 
-                             confidence: Optional[float] = None, volatility: Optional[float] = None) -> StopLossOrder:
+
+    async def create_stop_loss(self, symbol: str, entry_price: float, strategy: str,
+                             confidence: float | None = None, volatility: float | None = None) -> StopLossOrder:
         """Create a stop-loss order using unified risk management"""
-        
+
         # Get strategy configuration
         config = self.strategy_configs.get(strategy, self.strategy_configs["automated_signal_trading"])
-        
+
         # Use unified risk manager to calculate optimal stop-loss
         stop_price = self.risk_manager.calculate_stop_loss(
             symbol=symbol,
@@ -108,7 +108,7 @@ class StrategyStopLossManager:
             confidence=confidence or 0.5,   # Default 50% confidence if not provided
             strategy_type=strategy
         )
-        
+
         # Create stop-loss order
         stop_order = StopLossOrder(
             symbol=symbol,
@@ -118,29 +118,29 @@ class StrategyStopLossManager:
             strategy=strategy,
             original_entry_price=entry_price
         )
-        
+
         # Store active stop
         self.active_stops[symbol] = stop_order
-        
+
         # Log the creation
         stop_pct = ((entry_price - stop_price) / entry_price) * 100
         logger.info(f"🎯 Created {config['primary_type'].value} stop-loss for {symbol}: "
                    f"${stop_price:.2f} ({stop_pct:.1f}% from entry ${entry_price:.2f})")
-        
+
         return stop_order
-    
-    async def update_stop_loss(self, symbol: str, current_price: float) -> Optional[StopLossOrder]:
+
+    async def update_stop_loss(self, symbol: str, current_price: float) -> StopLossOrder | None:
         """Update stop-loss based on current price and strategy rules"""
-        
+
         if symbol not in self.active_stops:
             return None
-        
+
         stop_order = self.active_stops[symbol]
         stop_order.current_price = current_price
-        
+
         # Get strategy configuration
         config = self.strategy_configs[stop_order.strategy]
-        
+
         # Handle different stop-loss types
         if stop_order.order_type == StopLossType.TRAILING_STOP:
             await self._update_trailing_stop(stop_order, current_price, config)
@@ -148,92 +148,92 @@ class StrategyStopLossManager:
             await self._check_time_based_stop(stop_order, config)
         elif stop_order.order_type == StopLossType.VOLATILITY_ADJUSTED:
             await self._update_volatility_stop(stop_order, current_price, config)
-        
+
         return stop_order
-    
-    async def _update_trailing_stop(self, stop_order: StopLossOrder, current_price: float, config: Dict):
+
+    async def _update_trailing_stop(self, stop_order: StopLossOrder, current_price: float, config: dict):
         """Update trailing stop-loss"""
-        
+
         profit_pct = (current_price - stop_order.original_entry_price) / stop_order.original_entry_price
-        
+
         # Only trail if in profit and above activation threshold
         activation_threshold = config.get("trailing_activation", 0.01)
-        
+
         if profit_pct > activation_threshold:
             trailing_distance = config.get("trailing_distance", 0.015)
             new_stop_price = current_price * (1 - trailing_distance)
-            
+
             # Only move stop up, never down
             if new_stop_price > stop_order.stop_price:
                 old_stop = stop_order.stop_price
                 stop_order.stop_price = new_stop_price
                 logger.info(f"📈 Trailing stop updated for {stop_order.symbol}: "
                            f"${old_stop:.2f} → ${new_stop_price:.2f}")
-    
-    async def _check_time_based_stop(self, stop_order: StopLossOrder, config: Dict):
+
+    async def _check_time_based_stop(self, stop_order: StopLossOrder, config: dict):
         """Check time-based stop conditions"""
-        
+
         time_elapsed = datetime.now() - stop_order.created_at
-        
+
         # Check maximum hold time
         if "max_hold_hours" in config:
             max_hours = config["max_hold_hours"]
             if time_elapsed.total_seconds() / 3600 > max_hours:
                 await self._trigger_stop_loss(stop_order, f"Time-based exit: held for {max_hours} hours")
-        
+
         elif "max_hold_days" in config:
             max_days = config["max_hold_days"]
             if time_elapsed.days > max_days:
                 await self._trigger_stop_loss(stop_order, f"Time-based exit: held for {max_days} days")
-        
+
         elif "reversion_timeout" in config:
             timeout_hours = config["reversion_timeout"]
             if time_elapsed.total_seconds() / 3600 > timeout_hours:
                 await self._trigger_stop_loss(stop_order, f"Mean reversion timeout: {timeout_hours} hours")
-    
-    async def _update_volatility_stop(self, stop_order: StopLossOrder, current_price: float, config: Dict):
+
+    async def _update_volatility_stop(self, stop_order: StopLossOrder, current_price: float, config: dict):
         """Update volatility-adjusted stop-loss"""
-        
+
         # This would typically use recent volatility data to adjust the stop
         # For now, we'll use a simple volatility estimate
         volatility = abs(current_price - stop_order.original_entry_price) / stop_order.original_entry_price
-        
+
         if volatility > 0.05:  # If volatility is high, slightly widen the stop
             adjustment_factor = min(1.2, 1 + volatility)
             base_stop_distance = stop_order.original_entry_price - stop_order.stop_price
             new_stop_distance = base_stop_distance * adjustment_factor
             new_stop_price = stop_order.original_entry_price - new_stop_distance
-            
+
             # Only widen the stop if it helps (move it down for long positions)
             if new_stop_price < stop_order.stop_price:
                 stop_order.stop_price = new_stop_price
                 logger.info(f"📊 Volatility-adjusted stop for {stop_order.symbol}: ${new_stop_price:.2f}")
-    
-    async def check_stop_triggers(self, market_data: Dict[str, float]) -> List[StopLossOrder]:
+
+    async def check_stop_triggers(self, market_data: dict[str, float]) -> list[StopLossOrder]:
         """Check all active stops for trigger conditions"""
-        
+
         triggered_stops = []
-        
+
         for symbol, stop_order in list(self.active_stops.items()):
             if symbol in market_data:
                 current_price = market_data[symbol]
-                
+
                 # Update the stop first
                 await self.update_stop_loss(symbol, current_price)
-                
+
                 # Check if stop is triggered
                 if current_price <= stop_order.stop_price and not stop_order.triggered:
                     await self._trigger_stop_loss(stop_order, f"Price trigger: ${current_price:.2f} <= ${stop_order.stop_price:.2f}")
                     triggered_stops.append(stop_order)
-        
+
         return triggered_stops
-    
+
     async def _trigger_stop_loss(self, stop_order: StopLossOrder, reason: str):
         """Trigger a stop-loss order"""
-        
+
         stop_order.triggered = True
         stop_order.trigger_time = datetime.now()
-        
+
         # Calculate the loss
         if stop_order.current_price:
             loss_pct = ((stop_order.original_entry_price - stop_order.current_price) / stop_order.original_entry_price) * 100
@@ -241,23 +241,23 @@ class StrategyStopLossManager:
         else:
             loss_pct = ((stop_order.original_entry_price - stop_order.stop_price) / stop_order.original_entry_price) * 100
             loss_amount = stop_order.original_entry_price - stop_order.stop_price
-        
+
         logger.warning(f"🛑 STOP-LOSS TRIGGERED for {stop_order.symbol}: {reason}")
         logger.warning(f"   Entry: ${stop_order.original_entry_price:.2f}, Exit: ${stop_order.stop_price:.2f}")
         logger.warning(f"   Loss: {loss_pct:.1f}% (${loss_amount:.2f} per share)")
-        
+
         # Move to history and remove from active stops
         self.stop_loss_history.append(stop_order)
         del self.active_stops[stop_order.symbol]
-        
+
         # Here you would integrate with your actual trading system to execute the stop-loss order
         await self._execute_stop_loss_order(stop_order)
-    
+
     async def _execute_stop_loss_order(self, stop_order: StopLossOrder):
         """Execute the actual stop-loss order (integration point with trading system)"""
-        
+
         logger.info(f"🔄 Executing stop-loss order for {stop_order.symbol} at ${stop_order.stop_price:.2f}")
-        
+
         # This would integrate with your actual trading API
         # For now, we'll just log the intended action
         order_details = {
@@ -268,25 +268,25 @@ class StrategyStopLossManager:
             "strategy": stop_order.strategy,
             "reason": "stop_loss_triggered"
         }
-        
+
         logger.info(f"📤 Stop-loss order details: {order_details}")
-        
+
         # TODO: Integrate with actual trading system
         # await trading_api.place_order(order_details)
-    
-    def get_strategy_stop_loss_stats(self) -> Dict[str, Any]:
+
+    def get_strategy_stop_loss_stats(self) -> dict[str, Any]:
         """Get statistics about stop-losses by strategy"""
-        
+
         stats = {}
-        
+
         for strategy in self.strategy_configs.keys():
             strategy_stops = [s for s in self.stop_loss_history if s.strategy == strategy]
-            
+
             if strategy_stops:
                 total_stops = len(strategy_stops)
-                avg_loss = sum((s.original_entry_price - s.stop_price) / s.original_entry_price 
+                avg_loss = sum((s.original_entry_price - s.stop_price) / s.original_entry_price
                              for s in strategy_stops) / total_stops * 100
-                
+
                 stats[strategy] = {
                     "total_stops_triggered": total_stops,
                     "average_loss_pct": f"{avg_loss:.1f}%",
@@ -298,16 +298,16 @@ class StrategyStopLossManager:
                     "average_loss_pct": "N/A",
                     "active_stops": len([s for s in self.active_stops.values() if s.strategy == strategy])
                 }
-        
+
         return stats
-    
-    def get_stop_loss_dashboard(self) -> Dict[str, Any]:
+
+    def get_stop_loss_dashboard(self) -> dict[str, Any]:
         """Get comprehensive stop-loss dashboard"""
-        
+
         return {
             "timestamp": datetime.now().isoformat(),
             "active_stops": len(self.active_stops),
-            "triggered_today": len([s for s in self.stop_loss_history 
+            "triggered_today": len([s for s in self.stop_loss_history
                                    if s.trigger_time and s.trigger_time.date() == datetime.now().date()]),
             "strategy_stats": self.get_strategy_stop_loss_stats(),
             "active_positions": [
@@ -333,7 +333,7 @@ def get_stop_loss_manager() -> StrategyStopLossManager:
 # Integration functions for each strategy
 class AutomatedSignalTradingIntegration:
     """Stop-loss integration for automated signal trading strategy"""
-    
+
     @staticmethod
     async def create_signal_stop_loss(symbol: str, entry_price: float, signal_confidence: float) -> StopLossOrder:
         """Create stop-loss for automated signal trading"""
@@ -347,7 +347,7 @@ class AutomatedSignalTradingIntegration:
 
 class MomentumStrategyIntegration:
     """Stop-loss integration for momentum strategy"""
-    
+
     @staticmethod
     async def create_momentum_stop_loss(symbol: str, entry_price: float, momentum_strength: float) -> StopLossOrder:
         """Create stop-loss for momentum strategy with trailing capabilities"""
@@ -361,7 +361,7 @@ class MomentumStrategyIntegration:
 
 class MeanReversionStrategyIntegration:
     """Stop-loss integration for mean reversion strategy"""
-    
+
     @staticmethod
     async def create_reversion_stop_loss(symbol: str, entry_price: float, support_level: float) -> StopLossOrder:
         """Create stop-loss for mean reversion with support level consideration"""
@@ -375,7 +375,7 @@ class MeanReversionStrategyIntegration:
 
 class PortfolioRebalancingIntegration:
     """Stop-loss integration for portfolio rebalancing strategy"""
-    
+
     @staticmethod
     async def create_rebalancing_stop_loss(symbol: str, entry_price: float, portfolio_weight: float) -> StopLossOrder:
         """Create stop-loss for portfolio rebalancing positions"""
@@ -390,40 +390,40 @@ class PortfolioRebalancingIntegration:
 if __name__ == "__main__":
     # Test the stop-loss integration system
     logger.info("🧪 Testing Strategy Stop-Loss Integration System...")
-    
+
     async def test_stop_loss_system():
         # Test creating stop-losses for different strategies
-        
+
         # Automated signal trading
         signal_stop = await AutomatedSignalTradingIntegration.create_signal_stop_loss("AAPL", 150.0, 0.8)
         print(f"Signal Trading Stop: {signal_stop.symbol} @ ${signal_stop.stop_price:.2f}")
-        
+
         # Momentum strategy
         momentum_stop = await MomentumStrategyIntegration.create_momentum_stop_loss("TSLA", 900.0, 0.75)
         print(f"Momentum Stop: {momentum_stop.symbol} @ ${momentum_stop.stop_price:.2f}")
-        
+
         # Mean reversion
         reversion_stop = await MeanReversionStrategyIntegration.create_reversion_stop_loss("MSFT", 380.0, 370.0)
         print(f"Mean Reversion Stop: {reversion_stop.symbol} @ ${reversion_stop.stop_price:.2f}")
-        
+
         # Portfolio rebalancing
         portfolio_stop = await PortfolioRebalancingIntegration.create_rebalancing_stop_loss("SPY", 450.0, 0.25)
         print(f"Portfolio Stop: {portfolio_stop.symbol} @ ${portfolio_stop.stop_price:.2f}")
-        
+
         # Test stop-loss triggers
         market_data = {"AAPL": 145.0, "TSLA": 850.0, "MSFT": 375.0, "SPY": 445.0}
         triggered = await stop_loss_manager.check_stop_triggers(market_data)
-        
+
         print(f"\nTriggered stops: {len(triggered)}")
         for stop in triggered:
             print(f"  {stop.symbol}: {stop.order_type.value}")
-        
+
         # Get dashboard
         dashboard = stop_loss_manager.get_stop_loss_dashboard()
         print(f"\nActive stops: {dashboard['active_stops']}")
         print(f"Triggered today: {dashboard['triggered_today']}")
-        
+
         print("\n✅ Strategy Stop-Loss Integration test completed!")
-    
+
     # Run the test
     asyncio.run(test_stop_loss_system())

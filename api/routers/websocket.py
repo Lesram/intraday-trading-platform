@@ -4,8 +4,8 @@
 Real-time WebSocket connections for live data
 """
 
+
 from fastapi import APIRouter, WebSocket
-from typing import Dict, Any
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ router = APIRouter()
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for live data"""
     await websocket.accept()
-    
+
     try:
         while True:
             # Keep connection alive with periodic data
@@ -22,8 +22,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 "type": "heartbeat",
                 "timestamp": "2025-08-08T12:00:00Z"
             })
-            
+
             await websocket.receive_text()  # Wait for client message
-            
+
     except Exception:
         pass  # Client disconnected

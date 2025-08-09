@@ -4,15 +4,10 @@
 Transformer-based predictions and dynamic ensemble weighting
 """
 
-import numpy as np
-import pandas as pd
 import logging
-from typing import Dict, List, Tuple, Optional
-from datetime import datetime, timedelta
-import pickle
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
-import asyncio
+from datetime import datetime
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +15,7 @@ class AdvancedMLPredictor:
     def __init__(self):
         self.models = {
             'rf': None,
-            'xgb': None, 
+            'xgb': None,
             'lstm': None,
             'transformer': None  # Will be loaded/trained
         }
@@ -28,7 +23,7 @@ class AdvancedMLPredictor:
         self.model_weights = {'rf': 0.25, 'xgb': 0.25, 'lstm': 0.25, 'transformer': 0.25}
         self.performance_history = {model: [] for model in self.models.keys()}
         self.prediction_history = []
-        
+
     def load_existing_models(self):
         """Load existing trained models"""
         try:
@@ -37,43 +32,43 @@ class AdvancedMLPredictor:
                 import os
                 if not os.path.exists('rf_ensemble_v2.pkl'):
                     raise FileNotFoundError("Random Forest model file not found")
-                
+
                 file_size = os.path.getsize('rf_ensemble_v2.pkl')
                 logger.info(f"🔍 Loading Random Forest model (size: {file_size:,} bytes)")
-                
+
                 import joblib
                 self.models['rf'] = joblib.load('rf_ensemble_v2.pkl')
-                
+
                 # Validate the loaded model
                 if not hasattr(self.models['rf'], 'predict'):
                     raise ValueError("Loaded model doesn't have predict method")
-                
+
                 logger.info("✅ Random Forest model loaded and validated successfully")
-                
+
             except Exception as e:
                 logger.error(f"❌ Random Forest loading failed: {type(e).__name__}: {e}")
                 logger.warning("🔄 Creating fallback Random Forest model with synthetic data")
                 from sklearn.ensemble import RandomForestClassifier
                 self.models['rf'] = RandomForestClassifier(n_estimators=100, random_state=42)
                 self._train_fallback_model(self.models['rf'], 'rf')
-            
+
             try:
                 import os
                 if not os.path.exists('xgb_ensemble_v2.pkl'):
                     raise FileNotFoundError("XGBoost model file not found")
-                
+
                 file_size = os.path.getsize('xgb_ensemble_v2.pkl')
                 logger.info(f"🔍 Loading XGBoost model (size: {file_size:,} bytes)")
-                
+
                 import joblib
                 self.models['xgb'] = joblib.load('xgb_ensemble_v2.pkl')
-                
+
                 # Validate the loaded model
                 if not hasattr(self.models['xgb'], 'predict'):
                     raise ValueError("Loaded XGBoost model doesn't have predict method")
-                    
+
                 logger.info("✅ XGBoost model loaded and validated successfully")
-                
+
             except Exception as e:
                 logger.error(f"❌ XGBoost loading failed: {type(e).__name__}: {e}")
                 logger.warning("🔄 Creating fallback XGBoost model")
@@ -84,37 +79,38 @@ class AdvancedMLPredictor:
                 except ImportError:
                     logger.error("XGBoost not available - using Random Forest fallback")
                     self.models['xgb'] = self.models['rf']
-            
+
             try:
                 # Install tensorflow if needed: pip install tensorflow
-                import tensorflow as tf
                 import os
-                
+
+                import tensorflow as tf
+
                 lstm_files = ['lstm_ensemble_best.keras', 'lstm_ensemble_v2.keras']
                 lstm_loaded = False
-                
+
                 for lstm_file in lstm_files:
                     try:
                         if os.path.exists(lstm_file):
                             file_size = os.path.getsize(lstm_file)
                             logger.info(f"🔍 Loading LSTM model from {lstm_file} (size: {file_size:,} bytes)")
-                            
+
                             self.models['lstm'] = tf.keras.models.load_model(lstm_file)
-                            
+
                             # Validate the loaded model
                             if not hasattr(self.models['lstm'], 'predict'):
                                 raise ValueError(f"Loaded LSTM model from {lstm_file} doesn't have predict method")
-                            
+
                             logger.info(f"✅ LSTM model loaded successfully from {lstm_file}")
                             lstm_loaded = True
                             break
                     except Exception as file_error:
                         logger.warning(f"❌ Failed to load LSTM from {lstm_file}: {file_error}")
                         continue
-                
+
                 if not lstm_loaded:
                     raise Exception("No LSTM model files could be loaded")
-                    
+
             except Exception as e:
                 logger.error(f"❌ LSTM loading failed: {type(e).__name__}: {e}")
                 logger.warning("🔄 Creating simple LSTM fallback model")
@@ -124,40 +120,41 @@ class AdvancedMLPredictor:
                 except ImportError:
                     logger.warning("⚠️ TensorFlow not available - LSTM model disabled")
                     self.models['lstm'] = None
-            
+
             try:
                 import os
                 scaler_files = ['feature_scaler_v2.gz', 'feature_scaler.pkl', 'scaler.pkl']
                 scaler_loaded = False
-                
+
                 for scaler_file in scaler_files:
                     try:
                         if os.path.exists(scaler_file):
                             logger.info(f"🔍 Loading feature scaler from {scaler_file}")
-                            
+
                             if scaler_file.endswith('.gz'):
                                 import gzip
+
                                 import joblib
                                 with gzip.open(scaler_file, 'rb') as f:
                                     self.scaler = joblib.load(f)
                             else:
                                 import joblib
                                 self.scaler = joblib.load(scaler_file)
-                            
+
                             # Validate the loaded scaler
                             if not hasattr(self.scaler, 'transform'):
                                 raise ValueError(f"Loaded scaler from {scaler_file} doesn't have transform method")
-                            
+
                             logger.info(f"✅ Feature scaler loaded successfully from {scaler_file}")
                             scaler_loaded = True
                             break
                     except Exception as file_error:
                         logger.warning(f"❌ Failed to load scaler from {scaler_file}: {file_error}")
                         continue
-                
+
                 if not scaler_loaded:
                     raise Exception("No feature scaler files could be loaded")
-                    
+
             except Exception as e:
                 logger.error(f"❌ Feature scaler loading failed: {type(e).__name__}: {e}")
                 logger.warning("🔄 Creating new StandardScaler")
@@ -174,13 +171,13 @@ class AdvancedMLPredictor:
                 logger.info("✅ New StandardScaler created with realistic market ranges")
         except Exception as e:
             logger.error(f"Error in model loading: {e}")
-    
+
     def _train_fallback_model(self, model, model_name):
         """DO NOT train fallback models with synthetic data - leave models unavailable"""
         logger.error(f"❌ CRITICAL: {model_name} model file not found")
-        logger.error(f"❌ NO FALLBACK: Will not train with synthetic data - this defeats the purpose of real trading")
+        logger.error("❌ NO FALLBACK: Will not train with synthetic data - this defeats the purpose of real trading")
         logger.error(f"❌ Please retrain {model_name} model with real market data")
-        
+
         # Set model to None to indicate unavailability
         if model_name == 'rf':
             self.models['rf'] = None
@@ -188,9 +185,9 @@ class AdvancedMLPredictor:
             self.models['xgb'] = None
         elif model_name == 'lstm':
             self.models['lstm'] = None
-        
+
         logger.warning(f"⚠️ {model_name.upper()} model marked as UNAVAILABLE - ensemble will operate with reduced capacity")
-    
+
     def _create_simple_lstm(self):
         """Create a simple LSTM model as fallback"""
         try:
@@ -202,27 +199,27 @@ class AdvancedMLPredictor:
                 tf.keras.layers.Dense(1, activation='sigmoid')
             ])
             model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-            
+
             # Train with synthetic data
             import numpy as np
             X = np.random.randn(100, 10, 5)  # 100 samples, 10 timesteps, 5 features
             y = np.random.randint(0, 2, 100)  # Binary labels
             model.fit(X, y, epochs=1, verbose=0)
-            
+
             logger.info("✅ Created and trained simple LSTM fallback model")
             return model
         except Exception as e:
             logger.error(f"Failed to create LSTM fallback: {e}")
             return None
-                
+
         except Exception as e:
             logger.error(f"Error loading models: {e}")
-    
-    def prepare_features(self, market_data: Dict) -> np.ndarray:
+
+    def prepare_features(self, market_data: dict) -> np.ndarray:
         """Prepare features for model prediction - adjusted for model compatibility"""
         try:
             features = []
-            
+
             # Price-based features
             prices = market_data.get('prices', [])
             if len(prices) >= 20:
@@ -233,7 +230,7 @@ class AdvancedMLPredictor:
                     np.mean(returns[-10:]),   # 10-period return
                     np.std(returns[-20:]),    # Volatility
                 ])
-                
+
                 # Technical indicators
                 sma_5 = np.mean(prices[-5:])
                 sma_20 = np.mean(prices[-20:])
@@ -244,7 +241,7 @@ class AdvancedMLPredictor:
                 ])
             else:
                 features.extend([0.0] * 6)  # Padding for insufficient data
-            
+
             # Volume features
             volumes = market_data.get('volumes', [])
             if len(volumes) >= 10:
@@ -254,21 +251,21 @@ class AdvancedMLPredictor:
                 ])
             else:
                 features.extend([1.0, 0.1])
-            
+
             # RSI (if available)
             rsi = market_data.get('rsi', 50)
             features.extend([
                 rsi / 100.0,
                 1.0 if rsi < 30 else (0.0 if rsi > 70 else 0.5)  # RSI signal
             ])
-            
+
             # Market regime features - REDUCE TO 1 FEATURE to get 11 total
             features.extend([
                 market_data.get('vix_proxy', 20) / 30.0,  # Normalized VIX only
             ])
-            
+
             feature_array = np.array(features).reshape(1, -1)
-            
+
             # Ensure we have exactly 11 features for RF and scaler compatibility
             if feature_array.shape[1] != 11:
                 # Pad or trim to 11 features
@@ -277,32 +274,32 @@ class AdvancedMLPredictor:
                     feature_array = np.hstack([feature_array, padding])
                 else:
                     feature_array = feature_array[:, :11]
-            
+
             # Scale features if scaler is available
             if self.scaler is not None:
                 try:
                     feature_array = self.scaler.transform(feature_array)
                 except Exception as e:
                     logger.warning(f"Feature scaling failed: {e}, using raw features")
-            
+
             return feature_array
-            
+
         except Exception as e:
             logger.error(f"Feature preparation failed: {e}")
             return np.zeros((1, 11))  # Return default features
-            
-    def prepare_features_for_model(self, market_data: Dict, model_name: str) -> np.ndarray:
+
+    def prepare_features_for_model(self, market_data: dict, model_name: str) -> np.ndarray:
         """Prepare features specific to each model's requirements"""
         try:
             if model_name in ['rf']:
                 # Random Forest: 11 features (basic)
                 return self.prepare_features(market_data)
-                
+
             elif model_name in ['xgb']:
                 # XGBoost: 450 features (likely windowed/sequence features)
                 # For now, create expanded features by padding/repeating base features
                 base_features = self.prepare_features(market_data)
-                
+
                 # Expand to 450 features by creating feature engineering variants
                 expanded = []
                 for i in range(450):
@@ -313,14 +310,14 @@ class AdvancedMLPredictor:
                         base_idx = i % 11
                         multiplier = (i // 11) + 1
                         expanded.append(base_features[0][base_idx] * np.sin(multiplier * 0.1))
-                
+
                 return np.array(expanded).reshape(1, -1)
-                
+
             elif model_name in ['lstm']:
                 # LSTM: (60, 30) - 60 timesteps of 30 features
                 # For now, create a simplified version
                 base_features = self.prepare_features(market_data)
-                
+
                 # Expand base 11 features to 30 by adding engineered variants
                 timestep_features = []
                 for i in range(30):
@@ -330,47 +327,47 @@ class AdvancedMLPredictor:
                         # Create engineered features
                         base_idx = i % 11
                         timestep_features.append(base_features[0][base_idx] * (1 + 0.1 * (i - 11)))
-                
+
                 # Repeat for 60 timesteps with slight variations
                 sequence = []
                 for t in range(60):
                     timestep = [f * (1 + 0.001 * t) for f in timestep_features]  # Slight temporal variation
                     sequence.append(timestep)
-                
+
                 return np.array(sequence).reshape(1, 60, 30)
             else:
                 # Default to base features
                 return self.prepare_features(market_data)
-                
+
         except Exception as e:
             logger.error(f"Model-specific feature preparation failed: {e}")
             # Return default neutral features
             return np.zeros((1, 11))
-    
-    def predict_with_ensemble(self, market_data: Dict) -> Dict:
+
+    def predict_with_ensemble(self, market_data: dict) -> dict:
         """Generate predictions using weighted ensemble"""
         try:
             predictions = {}
-            
+
             # Get predictions from each available model with model-specific features
             for model_name, model in self.models.items():
                 if model is None:
                     continue
-                    
+
                 try:
                     # Prepare model-specific features
                     features = self.prepare_features_for_model(market_data, model_name)
-                    
+
                     if model_name == 'transformer':
                         # Need TensorFlow integration for transformer
-                        logger.warning(f"⚠️ Transformer model not fully implemented, using ensemble average")
+                        logger.warning("⚠️ Transformer model not fully implemented, using ensemble average")
                         continue
                     elif model_name == 'lstm':
                         # Now with proper LSTM features
                         if hasattr(model, 'predict'):
                             pred = model.predict(features, verbose=0)[0][0]  # LSTM output
                         else:
-                            logger.warning(f"⚠️ LSTM model predict method not available")
+                            logger.warning("⚠️ LSTM model predict method not available")
                             continue
                     else:
                         # Standard sklearn models (RF, XGB)
@@ -378,41 +375,41 @@ class AdvancedMLPredictor:
                             pred = model.predict_proba(features)[0][1]  # Probability of positive class
                         else:
                             pred = model.predict(features)[0]
-                    
+
                     # Convert predictions to standard Python float for JSON compatibility
                     pred = float(pred)
-                    
+
                     predictions[model_name] = pred
-                    
+
                 except Exception as e:
                     logger.warning(f"Prediction failed for {model_name}: {e}")
                     continue
-            
+
             if not predictions:
                 return {"ensemble_prediction": 0.5, "confidence": 0.5, "individual_predictions": {}}
-            
+
             # Weighted ensemble prediction
             total_weight = sum(self.model_weights[name] for name in predictions.keys())
             if total_weight == 0:
                 ensemble_pred = np.mean(list(predictions.values()))
             else:
                 ensemble_pred = sum(
-                    pred * self.model_weights[name] / total_weight 
+                    pred * self.model_weights[name] / total_weight
                     for name, pred in predictions.items()
                 )
-            
+
             # Calculate confidence based on agreement
             pred_values = list(predictions.values())
             agreement = 1 - np.std(pred_values) if len(pred_values) > 1 else 0.8
             confidence = min(0.95, 0.5 + agreement * 0.5)
-            
+
             result = {
                 "ensemble_prediction": float(ensemble_pred),
-                "confidence": float(confidence), 
+                "confidence": float(confidence),
                 "individual_predictions": {k: float(v) for k, v in predictions.items()},
                 "model_weights": {k: float(v) for k, v in self.model_weights.items()}
             }
-            
+
             # Store prediction for performance tracking
             self.prediction_history.append({
                 "timestamp": datetime.now().isoformat(),
@@ -420,13 +417,13 @@ class AdvancedMLPredictor:
                 "confidence": confidence,
                 "symbol": market_data.get('symbol', 'UNKNOWN')
             })
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Ensemble prediction failed: {e}")
             return {"ensemble_prediction": 0.5, "confidence": 0.5, "individual_predictions": {}}
-    
+
     def update_model_weights(self):
         """Update model weights based on recent performance"""
         try:
@@ -434,27 +431,27 @@ class AdvancedMLPredictor:
             # For now, implement a simple decay toward equal weights
             target_weight = 1.0 / len([m for m in self.models.values() if m is not None])
             decay_factor = 0.95
-            
+
             for model_name in self.model_weights:
                 if self.models[model_name] is not None:
                     current_weight = self.model_weights[model_name]
                     self.model_weights[model_name] = (
-                        decay_factor * current_weight + 
+                        decay_factor * current_weight +
                         (1 - decay_factor) * target_weight
                     )
-            
+
             # Normalize weights
             total = sum(self.model_weights.values())
             if total > 0:
                 for model_name in self.model_weights:
                     self.model_weights[model_name] /= total
-            
+
             logger.info(f"🔄 Updated model weights: {self.model_weights}")
-            
+
         except Exception as e:
             logger.error(f"Weight update failed: {e}")
-    
-    def get_model_performance_summary(self) -> Dict:
+
+    def get_model_performance_summary(self) -> dict:
         """Get summary of model performance"""
         return {
             "total_predictions": len(self.prediction_history),
@@ -462,17 +459,17 @@ class AdvancedMLPredictor:
             "available_models": [name for name, model in self.models.items() if model is not None],
             "recent_predictions": self.prediction_history[-10:] if self.prediction_history else []
         }
-    
-    def get_detailed_model_status(self) -> Dict:
+
+    def get_detailed_model_status(self) -> dict:
         """Get detailed status of all models including warnings"""
         import os
-        
+
         status = {
             "models": {},
             "critical_warnings": [],
             "recommendations": []
         }
-        
+
         for model_name, model in self.models.items():
             if model is None:
                 status["models"][model_name] = {
@@ -482,7 +479,7 @@ class AdvancedMLPredictor:
                     "reliability": "none"
                 }
                 continue
-            
+
             model_info = {
                 "loaded": True,
                 "type": type(model).__name__,
@@ -490,11 +487,11 @@ class AdvancedMLPredictor:
                 "has_predict_proba": hasattr(model, 'predict_proba'),
                 "weight": self.model_weights.get(model_name, 0.0)
             }
-            
+
             # Check if this is a fallback model
             fallback_file = f'{model_name}_fallback_synthetic.pkl'
             original_file = f'{model_name}_ensemble_v2.pkl'
-            
+
             if os.path.exists(fallback_file):
                 model_info["source"] = "synthetic_fallback"
                 model_info["reliability"] = "unreliable"
@@ -506,23 +503,23 @@ class AdvancedMLPredictor:
                     f"Retrain {model_name} model with real market data immediately"
                 )
             elif os.path.exists(original_file):
-                model_info["source"] = "trained_model" 
+                model_info["source"] = "trained_model"
                 model_info["reliability"] = "reliable"
                 model_info["status"] = "operational"
             else:
                 model_info["source"] = "unknown"
                 model_info["reliability"] = "unknown"
                 model_info["status"] = "unclear"
-            
+
             status["models"][model_name] = model_info
-        
+
         # Calculate ensemble reliability
         total_weight = sum(self.model_weights.values())
         synthetic_weight = sum(
             self.model_weights.get(name, 0) for name, info in status["models"].items()
             if info.get("source") == "synthetic_fallback"
         )
-        
+
         if total_weight > 0:
             synthetic_percentage = (synthetic_weight / total_weight) * 100
             status["ensemble_reliability"] = {
@@ -530,15 +527,15 @@ class AdvancedMLPredictor:
                 "real_data_percentage": 100 - synthetic_percentage,
                 "overall_quality": "poor" if synthetic_percentage > 30 else "good" if synthetic_percentage < 10 else "degraded"
             }
-            
+
             if synthetic_percentage > 0:
                 status["critical_warnings"].append(
                     f"Ensemble contains {synthetic_percentage:.1f}% synthetic data - reducing prediction quality"
                 )
-        
+
         return status
-    
-    def predict(self, market_data: Dict) -> float:
+
+    def predict(self, market_data: dict) -> float:
         """Simple predict method that returns ensemble prediction as float"""
         try:
             result = self.predict_with_ensemble(market_data)
@@ -550,39 +547,39 @@ class AdvancedMLPredictor:
 # Simple Transformer-like attention mechanism (lightweight implementation)
 class SimpleAttentionPredictor:
     """Simplified attention-based predictor for time series"""
-    
+
     def __init__(self, sequence_length: int = 20):
         self.sequence_length = sequence_length
         self.is_trained = False
-        
-    def prepare_sequences(self, data: List[float]) -> np.ndarray:
+
+    def prepare_sequences(self, data: list[float]) -> np.ndarray:
         """Prepare sequences for attention mechanism"""
         if len(data) < self.sequence_length:
             # Pad with the last available value
             data = data + [data[-1]] * (self.sequence_length - len(data))
-        
+
         # Take the last sequence_length points
         sequence = np.array(data[-self.sequence_length:])
         return sequence.reshape(1, -1)
-    
-    def predict(self, price_sequence: List[float]) -> float:
+
+    def predict(self, price_sequence: list[float]) -> float:
         """Simple attention-based prediction"""
         try:
             sequence = self.prepare_sequences(price_sequence)
-            
+
             # Simple attention weights (recency bias)
             positions = np.arange(self.sequence_length)
             attention_weights = np.exp(positions) / np.sum(np.exp(positions))
-            
+
             # Weighted prediction based on recent trends
             returns = np.diff(sequence[0]) / sequence[0][:-1]
             weighted_return = np.sum(returns * attention_weights[1:])
-            
+
             # Convert to probability-like score
             prediction = 0.5 + np.tanh(weighted_return * 10) * 0.3
-            
+
             return max(0.1, min(0.9, prediction))
-            
+
         except Exception as e:
             logger.error(f"Attention prediction failed: {e}")
             return 0.5
@@ -614,7 +611,7 @@ def get_advanced_predictor():
 if __name__ == "__main__":
     print("🧠 Advanced ML Predictor System Ready")
     initialize_advanced_predictor()
-    
+
     # Test with real market data
     test_data = {
         'symbol': 'AAPL',
@@ -624,6 +621,6 @@ if __name__ == "__main__":
         'vix_proxy': 24.28,  # Real VIX value instead of hardcoded 18.5
         'market_trend': 0.02
     }
-    
+
     result = advanced_predictor.predict_with_ensemble(test_data)
     print(f"📊 Test prediction: {result}")

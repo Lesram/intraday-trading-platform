@@ -5,14 +5,12 @@ Clean, organized, and optimized institutional trading platform
 Version: 4.0 - Comprehensive Cleanup Edition
 """
 
-import json
 import asyncio
+import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-import time
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -26,13 +24,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # FastAPI imports
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from pydantic import BaseModel
 
 # Environment and configuration
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
 load_dotenv('config/.env')
 
 # Trading API
@@ -58,7 +57,7 @@ app.add_middleware(
 class TradeRequest(BaseModel):
     symbol: str
     side: str
-    quantity: Optional[float] = None
+    quantity: float | None = None
     reason: str = "Manual"
 
 class ToggleRequest(BaseModel):
@@ -80,10 +79,10 @@ class TradingSignalResponse(BaseModel):
     confidence: float
     timestamp: str
     current_price: float
-    target_price: Optional[float]
-    stop_loss: Optional[float]
-    kelly_fraction: Optional[float] = 0.1  # Default 10% Kelly sizing
-    sentiment_score: Optional[float] = 0.0
+    target_price: float | None
+    stop_loss: float | None
+    kelly_fraction: float | None = 0.1  # Default 10% Kelly sizing
+    sentiment_score: float | None = 0.0
 
 # Alpaca Client
 class AlpacaClient:
@@ -96,21 +95,21 @@ class AlpacaClient:
                 os.getenv('APCA_API_BASE_URL', 'https://paper-api.alpaca.markets'),
                 api_version='v2'
             )
-            
+
             # Test connection
             account = self.api.get_account()
             logger.info(f"✅ Alpaca client initialized - Account: {account.status}")
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to initialize Alpaca client: {e}")
             raise
-    
+
     def get_account(self):
         return self.api.get_account()
-    
+
     def get_positions(self):
         return self.api.list_positions()
-    
+
     def get_orders(self, status="all", limit=50):
         return self.api.list_orders(status=status, limit=limit)
 
@@ -129,47 +128,47 @@ class MLModelsManager:
             'feature_scaler': 'models/feature_scaler_v2.gz'
         }
         self.load_models()
-    
+
     def load_models(self):
         """Load ML models and check their status"""
         try:
             models_ok = 0
-            
+
             for model_name, file_path in self.model_files.items():
                 if os.path.exists(file_path) and os.path.getsize(file_path) > 1000:
                     models_ok += 1
                     logger.info(f"✅ Found {model_name}: {os.path.getsize(file_path):,} bytes")
                 else:
                     logger.warning(f"❌ Missing {model_name}: {file_path}")
-            
+
             self.models_loaded = models_ok >= 3  # Need at least 3 models
-            
+
             if self.models_loaded:
                 logger.info(f"✅ ML Models Status: {models_ok}/4 models loaded successfully")
             else:
                 logger.error(f"❌ ML Models Status: Only {models_ok}/4 models found")
-                
+
         except Exception as e:
             logger.error(f"❌ Error loading ML models: {e}")
             self.models_loaded = False
-    
+
     def generate_prediction(self, symbol: str):
         """Generate trading prediction for symbol"""
         try:
             if not self.models_loaded:
                 return {'prediction': 'neutral', 'confidence': 0.5}
-            
+
             # Simplified prediction based on symbol hash (for demo)
             import hashlib
             symbol_hash = int(hashlib.md5(symbol.encode()).hexdigest(), 16)
-            
+
             if symbol_hash % 3 == 0:
                 return {'prediction': 'buy', 'confidence': 0.75}
             elif symbol_hash % 3 == 1:
                 return {'prediction': 'sell', 'confidence': 0.72}
             else:
                 return {'prediction': 'neutral', 'confidence': 0.65}
-                
+
         except Exception as e:
             logger.error(f"❌ Prediction error for {symbol}: {e}")
             return {'prediction': 'neutral', 'confidence': 0.5}
@@ -180,7 +179,7 @@ ml_models = MLModelsManager()
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -223,7 +222,7 @@ async def execute_market_order(symbol: str, side: str, quantity: float, reason: 
             type='market',
             time_in_force='day'
         )
-        
+
         trade_log = {
             "timestamp": datetime.now().isoformat(),
             "symbol": symbol,
@@ -233,10 +232,10 @@ async def execute_market_order(symbol: str, side: str, quantity: float, reason: 
             "status": order.status,
             "reason": reason
         }
-        
+
         logger.info(f"📝 Trade executed: {symbol} {side} {quantity} shares - {reason}")
         return {"success": True, "order": order, "trade_log": trade_log}
-        
+
     except Exception as e:
         logger.error(f"❌ Trade execution failed: {e}")
         return {"success": False, "error": str(e)}
@@ -257,7 +256,7 @@ async def get_health():
     """System health check"""
     try:
         account = alpaca_client.get_account()
-        
+
         return {
             "status": "healthy",
             "database": "connected",
@@ -296,7 +295,7 @@ async def get_health_status():
             },
             "last_check": datetime.now().isoformat()
         }
-        
+
         return {
             "status": "success",
             "data": health_data,
@@ -317,7 +316,7 @@ async def get_portfolio_metrics():
     try:
         account = alpaca_client.get_account()
         positions = alpaca_client.get_positions()
-        
+
         return {
             "total_value": float(account.portfolio_value),
             "cash_available": float(account.cash),  # Dashboard expects cash_available
@@ -350,7 +349,7 @@ async def get_positions():
     try:
         positions = alpaca_client.get_positions()
         position_list = []
-        
+
         for position in positions:
             position_list.append({
                 "symbol": position.symbol,
@@ -362,7 +361,7 @@ async def get_positions():
                 "current_price": float(position.current_price),
                 "side": "LONG" if float(position.qty) > 0 else "SHORT"
             })
-        
+
         return {
             "status": "success",
             "data": position_list,
@@ -378,11 +377,11 @@ async def get_trading_signals(limit: int = 5):
     try:
         watchlist = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA', 'AMZN', 'META', 'SPY', 'QQQ']
         signals = []
-        
+
         for symbol in watchlist[:limit]:
             # Get ML prediction
             prediction = ml_models.generate_prediction(symbol)
-            
+
             # Generate signal based on prediction
             if prediction['prediction'] == 'buy':
                 signal_type = "BUY"
@@ -394,7 +393,7 @@ async def get_trading_signals(limit: int = 5):
                 stop_loss = 150.0 * 1.03
             else:
                 continue  # Skip neutral signals
-            
+
             signal = TradingSignalResponse(
                 symbol=symbol,
                 signal=signal_type,
@@ -406,11 +405,11 @@ async def get_trading_signals(limit: int = 5):
                 kelly_fraction=0.05 + (prediction['confidence'] * 0.1),  # 5-15% based on confidence
                 sentiment_score=0.0
             )
-            
+
             signals.append(signal)
-        
+
         trading_status["last_signal_check"] = datetime.now().isoformat()
-        
+
         return {
             "status": "success",
             "data": signals,
@@ -430,12 +429,12 @@ async def execute_trade(request: TradeRequest):
     """Execute a trade manually"""
     try:
         quantity = request.quantity or 10  # Default quantity
-        
+
         result = await execute_market_order(request.symbol, request.side, quantity, request.reason)
-        
+
         if result["success"]:
             trading_status["total_trades_today"] += 1
-        
+
         return result
     except Exception as e:
         logger.error(f"❌ Manual trade execution failed: {e}")
@@ -447,7 +446,7 @@ async def get_trading_status():
     """Get trading status"""
     try:
         account = alpaca_client.get_account()
-        
+
         return {
             "mode": "Autonomous",
             "trades_today": trading_status["total_trades_today"],
@@ -476,7 +475,7 @@ async def get_risk_metrics():
     """Get risk metrics"""
     try:
         account = alpaca_client.get_account()
-        
+
         return {
             "max_drawdown": 0.02,  # 2%
             "current_drawdown": 0.01,
@@ -500,7 +499,7 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             try:
                 account = alpaca_client.get_account()
-                
+
                 update_data = {
                     "type": "portfolio_update",
                     "timestamp": datetime.now().isoformat(),
@@ -508,14 +507,14 @@ async def websocket_endpoint(websocket: WebSocket):
                     "buying_power": float(account.buying_power),
                     "cash": float(account.cash)
                 }
-                
+
                 await manager.broadcast(update_data)
-                
+
             except Exception as e:
                 logger.error(f"Error sending real-time update: {e}")
-            
+
             await asyncio.sleep(10)  # Update every 10 seconds
-            
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -529,7 +528,7 @@ async def startup_event():
 if __name__ == "__main__":
     # Create logs directory if it doesn't exist
     os.makedirs('logs', exist_ok=True)
-    
+
     # Start the server
     uvicorn.run(
         app,

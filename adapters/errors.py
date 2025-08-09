@@ -4,13 +4,13 @@
 Custom exception classes for external service adapters
 """
 
-from typing import Optional, Dict, Any
+from typing import Any
 
 
 class AdapterError(Exception):
     """Base exception for all adapter errors"""
-    
-    def __init__(self, message: str, service: str, details: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, message: str, service: str, details: dict[str, Any] | None = None):
         self.message = message
         self.service = service
         self.details = details or {}
@@ -19,9 +19,9 @@ class AdapterError(Exception):
 
 class AlpacaError(AdapterError):
     """Alpaca API specific errors"""
-    
-    def __init__(self, message: str, status_code: Optional[int] = None, 
-                 error_code: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, message: str, status_code: int | None = None,
+                 error_code: str | None = None, details: dict[str, Any] | None = None):
         self.status_code = status_code
         self.error_code = error_code
         super().__init__(message, "alpaca", details)
@@ -62,12 +62,12 @@ class AlpacaMarketClosedError(AlpacaError):
     pass
 
 
-def map_alpaca_error(status_code: int, error_response: Dict[str, Any]) -> AlpacaError:
+def map_alpaca_error(status_code: int, error_response: dict[str, Any]) -> AlpacaError:
     """Map HTTP status codes and Alpaca error responses to specific exceptions"""
-    
+
     message = error_response.get('message', 'Unknown Alpaca error')
     code = error_response.get('code', 'UNKNOWN')
-    
+
     if status_code == 401:
         return AlpacaAuthenticationError(message, status_code, code, error_response)
     elif status_code == 403:

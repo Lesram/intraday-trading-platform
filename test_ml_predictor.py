@@ -2,12 +2,14 @@
 """
 Quick test script to diagnose ML predictor issues
 """
-import sys
 import os
+import sys
+
 sys.path.append(os.getcwd())
 
-from advanced_ml_predictor import initialize_advanced_predictor, advanced_predictor
 import logging
+
+from advanced_ml_predictor import advanced_predictor, initialize_advanced_predictor
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -15,23 +17,23 @@ logger = logging.getLogger(__name__)
 
 def test_ml_predictor():
     logger.info("🧪 Testing ML Predictor Initialization...")
-    
+
     try:
         # Check initial state
         logger.info(f"🔍 Initial advanced_predictor state: {advanced_predictor}")
-        
+
         # Initialize the predictor
         logger.info("🔧 Calling initialize_advanced_predictor()...")
         initialize_advanced_predictor()
-        
+
         logger.info(f"🔍 After initialization advanced_predictor state: {advanced_predictor}")
-        
+
         if advanced_predictor is None:
             logger.error("❌ Advanced predictor is None after initialization")
             return False
-            
+
         logger.info(f"✅ Predictor initialized: {type(advanced_predictor)}")
-        
+
         # Check models
         if hasattr(advanced_predictor, 'models'):
             logger.info(f"📊 Models available: {list(advanced_predictor.models.keys())}")
@@ -40,7 +42,7 @@ def test_ml_predictor():
         else:
             logger.error("❌ Predictor has no models attribute")
             return False
-            
+
         # Test prediction with sample data
         sample_market_data = {
             'symbol': 'TEST',
@@ -50,12 +52,12 @@ def test_ml_predictor():
             'vix_proxy': 22,
             'market_trend': 0.02
         }
-        
+
         logger.info("🔮 Testing prediction with sample data...")
         result = advanced_predictor.predict_with_ensemble(sample_market_data)
-        
+
         logger.info(f"🎯 Prediction Result: {result}")
-        
+
         if result and 'ensemble_prediction' in result:
             logger.info(f"✅ ML Predictor working! Final prediction: {result['ensemble_prediction']:.3f}")
             logger.info(f"   Individual predictions: {result.get('individual_predictions', {})}")
@@ -64,7 +66,7 @@ def test_ml_predictor():
         else:
             logger.error(f"❌ Invalid prediction result: {result}")
             return False
-            
+
     except Exception as e:
         logger.error(f"❌ ML Predictor test failed: {e}")
         import traceback

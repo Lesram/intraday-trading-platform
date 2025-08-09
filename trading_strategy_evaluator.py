@@ -4,15 +4,12 @@
 Comprehensive analysis and optimization of current trading strategies
 """
 
-import sys
-import os
 import json
-import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Tuple
-import pandas as pd
-import numpy as np
+import os
+import sys
+from datetime import datetime
+from typing import Any
 
 # Add current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -30,17 +27,17 @@ logger = logging.getLogger(__name__)
 
 class TradingStrategyEvaluator:
     """Comprehensive trading strategy analysis and optimization framework"""
-    
+
     def __init__(self):
         self.strategies_identified = {}
         self.performance_metrics = {}
         self.recommendations = {}
         self.optimization_results = {}
-        
-    def identify_current_strategies(self) -> Dict[str, Any]:
+
+    def identify_current_strategies(self) -> dict[str, Any]:
         """Identify and catalog current trading strategies"""
         logger.info("🔍 Identifying current trading strategies...")
-        
+
         strategies = {
             "automated_signal_trading": {
                 "description": "ML-driven automated trading based on ensemble predictions",
@@ -54,7 +51,7 @@ class TradingStrategyEvaluator:
                 "risk_management": "Confidence-based position sizing with Kelly criterion",
                 "current_status": "✅ ACTIVE - Generating live trades"
             },
-            
+
             "momentum_strategy": {
                 "description": "Momentum-based trend following strategy",
                 "trigger_conditions": [
@@ -67,7 +64,7 @@ class TradingStrategyEvaluator:
                 "risk_management": "Stop loss at -1.5% momentum",
                 "current_status": "🔄 IMPLEMENTED - Available via strategy toggle"
             },
-            
+
             "mean_reversion_strategy": {
                 "description": "Statistical mean reversion using Bollinger Bands",
                 "trigger_conditions": [
@@ -80,7 +77,7 @@ class TradingStrategyEvaluator:
                 "risk_management": "2% profit taking threshold, Bollinger Band exits",
                 "current_status": "🔄 IMPLEMENTED - Available via strategy toggle"
             },
-            
+
             "portfolio_rebalancing": {
                 "description": "Strategic asset allocation maintenance",
                 "trigger_conditions": [
@@ -93,15 +90,15 @@ class TradingStrategyEvaluator:
                 "current_status": "🔄 IMPLEMENTED - Available via rebalancing toggle"
             }
         }
-        
+
         self.strategies_identified = strategies
         logger.info(f"✅ Identified {len(strategies)} active trading strategies")
         return strategies
-    
-    def analyze_strategy_performance(self) -> Dict[str, Any]:
+
+    def analyze_strategy_performance(self) -> dict[str, Any]:
         """Analyze current strategy performance and effectiveness"""
         logger.info("📊 Analyzing strategy performance...")
-        
+
         performance_analysis = {
             "automated_signal_trading": {
                 "strengths": [
@@ -120,7 +117,7 @@ class TradingStrategyEvaluator:
                 "risk_score": 6.0,
                 "complexity_score": 9.0
             },
-            
+
             "momentum_strategy": {
                 "strengths": [
                     "✅ Clear momentum thresholds (2% price, 1.5x volume)",
@@ -138,7 +135,7 @@ class TradingStrategyEvaluator:
                 "risk_score": 7.5,
                 "complexity_score": 6.0
             },
-            
+
             "mean_reversion_strategy": {
                 "strengths": [
                     "✅ Statistical basis with Bollinger Bands",
@@ -156,7 +153,7 @@ class TradingStrategyEvaluator:
                 "risk_score": 8.0,
                 "complexity_score": 5.0
             },
-            
+
             "portfolio_rebalancing": {
                 "strengths": [
                     "✅ Clear allocation targets provide structure",
@@ -175,15 +172,15 @@ class TradingStrategyEvaluator:
                 "complexity_score": 3.0
             }
         }
-        
+
         self.performance_metrics = performance_analysis
         logger.info("✅ Strategy performance analysis completed")
         return performance_analysis
-    
-    def identify_optimization_opportunities(self) -> Dict[str, List[str]]:
+
+    def identify_optimization_opportunities(self) -> dict[str, list[str]]:
         """Identify specific areas for strategy optimization"""
         logger.info("🎯 Identifying optimization opportunities...")
-        
+
         optimizations = {
             "automated_signal_trading": [
                 "🔧 Implement dynamic confidence thresholds based on market volatility",
@@ -192,7 +189,7 @@ class TradingStrategyEvaluator:
                 "🔧 Expand signal universe to include sector rotation",
                 "🔧 Add regime-aware position sizing (bull/bear/sideways markets)"
             ],
-            
+
             "momentum_strategy": [
                 "🔧 Implement adaptive momentum thresholds using ATR or volatility",
                 "🔧 Add regime detection to avoid momentum trades in ranging markets",
@@ -200,7 +197,7 @@ class TradingStrategyEvaluator:
                 "🔧 Add correlation filters to avoid concentration risk",
                 "🔧 Integrate with VIX for market stress filtering"
             ],
-            
+
             "mean_reversion_strategy": [
                 "🔧 Implement adaptive Bollinger Band periods based on volatility cycles",
                 "🔧 Add trend filter to avoid counter-trend trades in strong moves",
@@ -208,7 +205,7 @@ class TradingStrategyEvaluator:
                 "🔧 Implement dynamic profit targets based on expected volatility",
                 "🔧 Add sector rotation and broader asset universe"
             ],
-            
+
             "portfolio_rebalancing": [
                 "🔧 Implement regime-based allocation adjustments",
                 "🔧 Add momentum and volatility factors to allocation decisions",
@@ -216,7 +213,7 @@ class TradingStrategyEvaluator:
                 "🔧 Implement tactical overlay for market timing adjustments",
                 "🔧 Add risk parity considerations to allocation model"
             ],
-            
+
             "cross_strategy_improvements": [
                 "🔧 Implement unified risk management across all strategies",
                 "🔧 Add correlation monitoring to prevent over-concentration",
@@ -225,15 +222,15 @@ class TradingStrategyEvaluator:
                 "🔧 Add performance attribution tracking for strategy evaluation"
             ]
         }
-        
+
         self.recommendations = optimizations
         logger.info(f"✅ Identified {sum(len(opts) for opts in optimizations.values())} optimization opportunities")
         return optimizations
-    
-    def benchmark_against_market(self) -> Dict[str, Any]:
+
+    def benchmark_against_market(self) -> dict[str, Any]:
         """Compare strategy performance against market benchmarks"""
         logger.info("📈 Benchmarking strategies against market performance...")
-        
+
         # This would typically use historical performance data
         # For now, providing framework and expected comparisons
         benchmark_analysis = {
@@ -243,7 +240,7 @@ class TradingStrategyEvaluator:
                 "VTI": "Total Stock Market - Full market exposure",
                 "BND": "Total Bond Market - Risk-off comparison"
             },
-            
+
             "comparison_metrics": [
                 "Total Return",
                 "Sharpe Ratio",
@@ -253,7 +250,7 @@ class TradingStrategyEvaluator:
                 "Average Win/Loss Ratio",
                 "Calmar Ratio (Return/Max Drawdown)"
             ],
-            
+
             "expected_performance_targets": {
                 "automated_signal_trading": {
                     "target_sharpe": ">1.5",
@@ -263,7 +260,7 @@ class TradingStrategyEvaluator:
                 },
                 "momentum_strategy": {
                     "target_sharpe": ">1.2",
-                    "target_max_dd": "<20%", 
+                    "target_max_dd": "<20%",
                     "target_win_rate": ">50%",
                     "benchmark_beat": "Should outperform in trending markets"
                 },
@@ -275,14 +272,14 @@ class TradingStrategyEvaluator:
                 }
             }
         }
-        
+
         logger.info("✅ Benchmark framework established")
         return benchmark_analysis
-    
-    def generate_optimization_plan(self) -> Dict[str, Any]:
+
+    def generate_optimization_plan(self) -> dict[str, Any]:
         """Generate comprehensive strategy optimization action plan"""
         logger.info("🚀 Generating optimization action plan...")
-        
+
         optimization_plan = {
             "phase_1_immediate_improvements": {
                 "timeframe": "1-2 weeks",
@@ -304,14 +301,14 @@ class TradingStrategyEvaluator:
                     },
                     {
                         "task": "Implement dynamic confidence thresholds",
-                        "strategy": "automated_signal_trading", 
+                        "strategy": "automated_signal_trading",
                         "effort": "Medium",
                         "impact": "Medium",
                         "description": "Adjust confidence threshold based on VIX levels"
                     }
                 ]
             },
-            
+
             "phase_2_strategy_enhancements": {
                 "timeframe": "3-4 weeks",
                 "priority": "MEDIUM",
@@ -339,7 +336,7 @@ class TradingStrategyEvaluator:
                     }
                 ]
             },
-            
+
             "phase_3_advanced_optimizations": {
                 "timeframe": "5-8 weeks",
                 "priority": "LOW",
@@ -368,15 +365,15 @@ class TradingStrategyEvaluator:
                 ]
             }
         }
-        
+
         self.optimization_results = optimization_plan
         logger.info("✅ Optimization plan generated with 3 phases")
         return optimization_plan
-    
-    def run_comprehensive_evaluation(self) -> Dict[str, Any]:
+
+    def run_comprehensive_evaluation(self) -> dict[str, Any]:
         """Run complete strategy reevaluation process"""
         logger.info("🎯 Starting comprehensive trading strategy reevaluation...")
-        
+
         results = {
             "timestamp": datetime.now().isoformat(),
             "evaluation_type": "AUDIT_ITEM_4_TRADING_STRATEGY_REEVALUATION",
@@ -387,15 +384,15 @@ class TradingStrategyEvaluator:
             "optimization_plan": self.generate_optimization_plan(),
             "summary": self.generate_executive_summary()
         }
-        
+
         # Save results to file
         with open('strategy_reevaluation_results.json', 'w') as f:
             json.dump(results, f, indent=2)
-        
+
         logger.info("✅ Comprehensive strategy reevaluation completed")
         return results
-    
-    def generate_executive_summary(self) -> Dict[str, Any]:
+
+    def generate_executive_summary(self) -> dict[str, Any]:
         """Generate executive summary of strategy evaluation"""
         return {
             "current_status": {
@@ -404,7 +401,7 @@ class TradingStrategyEvaluator:
                 "available_strategies": 3,  # momentum, mean_reversion, rebalancing
                 "overall_health": "GOOD - Solid foundation with optimization opportunities"
             },
-            
+
             "key_findings": [
                 "✅ Automated signal trading is operational with 60-80% confidence predictions",
                 "✅ All strategies have clear entry/exit rules and risk management",
@@ -412,14 +409,14 @@ class TradingStrategyEvaluator:
                 "⚠️ Fixed parameters don't adapt to market regimes",
                 "🔧 High potential for optimization through regime awareness"
             ],
-            
+
             "immediate_priorities": [
                 "1. Implement unified risk management across all strategies",
                 "2. Add explicit stop-losses to automated trading",
                 "3. Validate strategies through comprehensive backtesting",
                 "4. Implement regime detection for strategy selection"
             ],
-            
+
             "expected_improvements": {
                 "risk_reduction": "15-25% through better risk management",
                 "return_enhancement": "3-7% through optimization",
@@ -431,21 +428,21 @@ class TradingStrategyEvaluator:
 if __name__ == "__main__":
     evaluator = TradingStrategyEvaluator()
     results = evaluator.run_comprehensive_evaluation()
-    
+
     print("🎯 TRADING STRATEGY REEVALUATION COMPLETE!")
-    print(f"📄 Results saved to: strategy_reevaluation_results.json")
-    print(f"📝 Log saved to: strategy_reevaluation.log")
-    
+    print("📄 Results saved to: strategy_reevaluation_results.json")
+    print("📝 Log saved to: strategy_reevaluation.log")
+
     # Print executive summary
     summary = results['summary']
-    print(f"\n📊 EXECUTIVE SUMMARY:")
+    print("\n📊 EXECUTIVE SUMMARY:")
     print(f"Current Status: {summary['current_status']['overall_health']}")
     print(f"Active Strategies: {summary['current_status']['active_strategies']}/{summary['current_status']['total_strategies']}")
-    
-    print(f"\n🎯 IMMEDIATE PRIORITIES:")
+
+    print("\n🎯 IMMEDIATE PRIORITIES:")
     for priority in summary['immediate_priorities']:
         print(f"  {priority}")
-        
-    print(f"\n🚀 EXPECTED IMPROVEMENTS:")
+
+    print("\n🚀 EXPECTED IMPROVEMENTS:")
     for metric, improvement in summary['expected_improvements'].items():
         print(f"  {metric.title()}: {improvement}")

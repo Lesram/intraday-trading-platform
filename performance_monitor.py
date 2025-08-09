@@ -5,16 +5,15 @@ Real-time tracking of Sharpe ratio, drawdown, and success metrics
 Institutional-grade performance analytics for risk management
 """
 
+import json
 import logging
 import sqlite3
-import json
-import numpy as np
-import pandas as pd
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, NamedTuple
-from dataclasses import dataclass, asdict
 from enum import Enum
+
 import alpaca_trade_api as tradeapi
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -54,43 +53,43 @@ class PerformanceMonitor:
     - Win rate ≥ 55%
     - Profit factor ≥ 1.5
     """
-    
+
     def __init__(self, api_client: tradeapi.REST, initial_capital: float = 100000.0):
         self.api = api_client
         self.initial_capital = initial_capital
-        
+
         # Performance thresholds
         self.target_sharpe = 2.0
         self.warning_sharpe = 1.5
         self.critical_sharpe = 1.0
-        
+
         self.max_drawdown_limit = 0.06  # 6%
         self.warning_drawdown = 0.04    # 4%
-        
+
         self.target_monthly_return_min = 0.04  # 4%
         self.target_monthly_return_max = 0.08  # 8%
-        
+
         self.min_win_rate = 0.55
         self.min_profit_factor = 1.5
-        
+
         # Database setup
         self.db_path = "performance_metrics.db"
         self.init_database()
-        
+
         # Cache for calculations
         self.portfolio_history = []
         self.trade_history = []
         self.last_update = datetime.min
         self.last_log_time = datetime.min  # For throttling log output
-        
+
         logger.info(f"📊 Performance monitor initialized (Target: Sharpe≥{self.target_sharpe}, DD≤{self.max_drawdown_limit:.1%})")
-    
+
     def init_database(self):
         """Initialize SQLite database for performance tracking"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             # Portfolio snapshots table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS portfolio_snapshots (
@@ -103,7 +102,7 @@ class PerformanceMonitor:
                     account_data TEXT
                 )
             ''')
-            
+
             # Trade performance table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS trade_performance (
@@ -122,7 +121,7 @@ class PerformanceMonitor:
                     reason TEXT
                 )
             ''')
-            
+
             # Daily metrics table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS daily_metrics (
@@ -138,26 +137,26 @@ class PerformanceMonitor:
                     metrics_json TEXT
                 )
             ''')
-            
+
             conn.commit()
             conn.close()
-            
+
             logger.info("💾 Performance database initialized")
-            
+
         except Exception as e:
             logger.error(f"Error initializing performance database: {e}")
-    
-    def capture_portfolio_snapshot(self) -> Dict:
+
+    def capture_portfolio_snapshot(self) -> dict:
         """Capture current portfolio state"""
         try:
             account = self.api.get_account()
             positions = self.api.list_positions()
-            
+
             portfolio_value = float(account.portfolio_value)
             cash = float(account.cash)
             pnl_total = portfolio_value - self.initial_capital
             pnl_percent = (pnl_total / self.initial_capital) * 100
-            
+
             snapshot = {
                 'timestamp': datetime.now().isoformat(),
                 'portfolio_value': portfolio_value,
@@ -174,22 +173,22 @@ class PerformanceMonitor:
                     'status': account.status
                 }
             }
-            
+
             # Store in database
             self.store_portfolio_snapshot(snapshot)
-            
+
             return snapshot
-            
+
         except Exception as e:
             logger.error(f"Error capturing portfolio snapshot: {e}")
             return {}
-    
-    def store_portfolio_snapshot(self, snapshot: Dict):
+
+    def store_portfolio_snapshot(self, snapshot: dict):
         """Store portfolio snapshot in database"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             cursor.execute('''
                 INSERT OR REPLACE INTO portfolio_snapshots 
                 (timestamp, portfolio_value, cash, pnl_total, pnl_percent, num_positions, account_data)
@@ -203,30 +202,30 @@ class PerformanceMonitor:
                 snapshot['num_positions'],
                 json.dumps(snapshot['account_data'])
             ))
-            
+
             conn.commit()
             conn.close()
-            
+
         except Exception as e:
             logger.error(f"Error storing portfolio snapshot: {e}")
-    
-    def get_portfolio_history(self, days: int = 90) -> List[Dict]:
+
+    def get_portfolio_history(self, days: int = 90) -> list[dict]:
         """Get portfolio history from database"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             since_date = (datetime.now() - timedelta(days=days)).isoformat()
-            
+
             cursor.execute('''
                 SELECT * FROM portfolio_snapshots 
                 WHERE timestamp >= ? 
                 ORDER BY timestamp ASC
             ''', (since_date,))
-            
+
             rows = cursor.fetchall()
             conn.close()
-            
+
             history = []
             for row in rows:
                 history.append({
@@ -238,52 +237,52 @@ class PerformanceMonitor:
                     'num_positions': row[5],
                     'account_data': json.loads(row[6])
                 })
-            
+
             return history
-            
+
         except Exception as e:
             logger.error(f"Error getting portfolio history: {e}")
             return []
-    
+
     def calculate_sharpe_ratio(self, days: int = 90) -> float:
         """Calculate rolling Sharpe ratio"""
         try:
             history = self.get_portfolio_history(days)
             if len(history) < 30:  # Need at least 30 data points
                 return 0.0
-            
+
             # Calculate daily returns
             values = [h['portfolio_value'] for h in history]
             returns = [(values[i] / values[i-1] - 1) for i in range(1, len(values))]
-            
+
             if not returns:
                 return 0.0
-            
+
             # Calculate Sharpe ratio
             mean_return = np.mean(returns)
             std_return = np.std(returns)
-            
+
             if std_return == 0:
                 return 0.0
-            
+
             # Annualized Sharpe (assuming ~252 trading days)
             sharpe_ratio = (mean_return / std_return) * np.sqrt(252)
-            
+
             return sharpe_ratio
-            
+
         except Exception as e:
             logger.error(f"Error calculating Sharpe ratio: {e}")
             return 0.0
-    
-    def calculate_drawdown_metrics(self) -> Tuple[float, float]:
+
+    def calculate_drawdown_metrics(self) -> tuple[float, float]:
         """Calculate current and maximum drawdown"""
         try:
             history = self.get_portfolio_history(90)
             if len(history) < 2:
                 return 0.0, 0.0
-            
+
             values = [h['portfolio_value'] for h in history]
-            
+
             # Calculate running maximum (peak)
             peaks = []
             current_peak = values[0]
@@ -291,29 +290,29 @@ class PerformanceMonitor:
                 if value > current_peak:
                     current_peak = value
                 peaks.append(current_peak)
-            
+
             # Calculate drawdowns
             drawdowns = [(peaks[i] - values[i]) / peaks[i] for i in range(len(values))]
-            
+
             current_drawdown = drawdowns[-1] if drawdowns else 0.0
             max_drawdown = max(drawdowns) if drawdowns else 0.0
-            
+
             return current_drawdown, max_drawdown
-            
+
         except Exception as e:
             logger.error(f"Error calculating drawdown: {e}")
             return 0.0, 0.0
-    
+
     def calculate_monthly_return(self) -> float:
         """Calculate current month return"""
         try:
             # Get start of current month
             now = datetime.now()
             month_start = datetime(now.year, now.month, 1)
-            
+
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             # Get portfolio value at month start
             cursor.execute('''
                 SELECT portfolio_value FROM portfolio_snapshots 
@@ -321,48 +320,48 @@ class PerformanceMonitor:
                 ORDER BY timestamp ASC 
                 LIMIT 1
             ''', (month_start.isoformat(),))
-            
+
             month_start_row = cursor.fetchone()
-            
+
             # Get current portfolio value
             cursor.execute('''
                 SELECT portfolio_value FROM portfolio_snapshots 
                 ORDER BY timestamp DESC 
                 LIMIT 1
             ''')
-            
+
             current_row = cursor.fetchone()
             conn.close()
-            
+
             if not month_start_row or not current_row:
                 return 0.0
-            
+
             month_start_value = month_start_row[0]
             current_value = current_row[0]
-            
+
             monthly_return = (current_value - month_start_value) / month_start_value
             return monthly_return
-            
+
         except Exception as e:
             logger.error(f"Error calculating monthly return: {e}")
             return 0.0
-    
-    def calculate_trade_metrics(self, days: int = 30) -> Dict[str, float]:
+
+    def calculate_trade_metrics(self, days: int = 30) -> dict[str, float]:
         """Calculate trade performance metrics"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             since_date = (datetime.now() - timedelta(days=days)).isoformat()
-            
+
             cursor.execute('''
                 SELECT pnl, pnl_percent FROM trade_performance 
                 WHERE exit_time >= ?
             ''', (since_date,))
-            
+
             trades = cursor.fetchall()
             conn.close()
-            
+
             if not trades:
                 return {
                     'total_trades': 0,
@@ -371,20 +370,20 @@ class PerformanceMonitor:
                     'avg_loss': 0.0,
                     'profit_factor': 0.0
                 }
-            
+
             pnls = [trade[0] for trade in trades]
             winning_trades = [pnl for pnl in pnls if pnl > 0]
             losing_trades = [pnl for pnl in pnls if pnl <= 0]
-            
+
             total_trades = len(trades)
             win_rate = len(winning_trades) / total_trades if total_trades > 0 else 0
             avg_win = np.mean(winning_trades) if winning_trades else 0
             avg_loss = abs(np.mean(losing_trades)) if losing_trades else 0
-            
+
             total_wins = sum(winning_trades) if winning_trades else 0
             total_losses = abs(sum(losing_trades)) if losing_trades else 0.01  # Avoid division by zero
             profit_factor = total_wins / total_losses if total_losses > 0 else 0
-            
+
             return {
                 'total_trades': total_trades,
                 'win_rate': win_rate,
@@ -392,7 +391,7 @@ class PerformanceMonitor:
                 'avg_loss': avg_loss,
                 'profit_factor': profit_factor
             }
-            
+
         except Exception as e:
             logger.error(f"Error calculating trade metrics: {e}")
             return {
@@ -402,36 +401,36 @@ class PerformanceMonitor:
                 'avg_loss': 0.0,
                 'profit_factor': 0.0
             }
-    
+
     def determine_alert_level(self, metrics: PerformanceMetrics) -> AlertLevel:
         """Determine alert level based on current metrics"""
         try:
             # Critical conditions (RED)
-            if (metrics.sharpe_ratio_90d < self.critical_sharpe or 
+            if (metrics.sharpe_ratio_90d < self.critical_sharpe or
                 metrics.max_drawdown > self.max_drawdown_limit or
                 metrics.current_drawdown > self.max_drawdown_limit):
                 return AlertLevel.RED
-            
+
             # Warning conditions (YELLOW)
             if (metrics.sharpe_ratio_90d < self.warning_sharpe or
                 metrics.current_drawdown > self.warning_drawdown or
                 metrics.win_rate < self.min_win_rate or
                 metrics.profit_factor < self.min_profit_factor):
                 return AlertLevel.YELLOW
-            
+
             # All good (GREEN)
             return AlertLevel.GREEN
-            
+
         except Exception as e:
             logger.error(f"Error determining alert level: {e}")
             return AlertLevel.YELLOW
-    
+
     def calculate_comprehensive_metrics(self) -> PerformanceMetrics:
         """Calculate all performance metrics"""
         try:
             # Get current portfolio snapshot
             snapshot = self.capture_portfolio_snapshot()
-            
+
             if not snapshot:
                 # Return default metrics if snapshot fails
                 return PerformanceMetrics(
@@ -452,13 +451,13 @@ class PerformanceMonitor:
                     profit_factor=0.0,
                     alert_level=AlertLevel.GREEN
                 )
-            
+
             # Calculate performance metrics
             sharpe_ratio = self.calculate_sharpe_ratio(90)
             current_drawdown, max_drawdown = self.calculate_drawdown_metrics()
             monthly_return = self.calculate_monthly_return()
             trade_metrics = self.calculate_trade_metrics(30)
-            
+
             # Create metrics object
             metrics = PerformanceMetrics(
                 timestamp=datetime.now(),
@@ -478,18 +477,18 @@ class PerformanceMonitor:
                 profit_factor=trade_metrics['profit_factor'],
                 alert_level=AlertLevel.GREEN  # Will be updated below
             )
-            
+
             # Determine alert level
             metrics.alert_level = self.determine_alert_level(metrics)
-            
+
             # Store daily metrics
             self.store_daily_metrics(metrics)
-            
+
             # Log performance summary
             self.log_performance_summary(metrics)
-            
+
             return metrics
-            
+
         except Exception as e:
             logger.error(f"Error calculating comprehensive metrics: {e}")
             return PerformanceMetrics(
@@ -510,15 +509,15 @@ class PerformanceMonitor:
                 profit_factor=0.0,
                 alert_level=AlertLevel.RED
             )
-    
+
     def store_daily_metrics(self, metrics: PerformanceMetrics):
         """Store daily metrics in database"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            
+
             date_str = metrics.timestamp.strftime('%Y-%m-%d')
-            
+
             cursor.execute('''
                 INSERT OR REPLACE INTO daily_metrics 
                 (date, sharpe_ratio_90d, max_drawdown, current_drawdown, monthly_return,
@@ -536,13 +535,13 @@ class PerformanceMonitor:
                 metrics.alert_level.value,
                 json.dumps(asdict(metrics), default=str)
             ))
-            
+
             conn.commit()
             conn.close()
-            
+
         except Exception as e:
             logger.error(f"Error storing daily metrics: {e}")
-    
+
     def log_performance_summary(self, metrics: PerformanceMetrics):
         """Log performance summary with appropriate alert level (throttled)"""
         try:
@@ -551,15 +550,15 @@ class PerformanceMonitor:
             if (now - self.last_log_time).total_seconds() < 60:
                 return
             self.last_log_time = now
-            
+
             alert_emoji = {
                 AlertLevel.GREEN: "🟢",
                 AlertLevel.YELLOW: "🟡",
                 AlertLevel.RED: "🔴"
             }
-            
+
             emoji = alert_emoji.get(metrics.alert_level, "⚪")
-            
+
             summary = (
                 f"{emoji} PERFORMANCE SUMMARY {emoji}\n"
                 f"Portfolio: ${metrics.portfolio_value:,.2f} ({metrics.pnl_percent:+.2f}%)\n"
@@ -571,17 +570,17 @@ class PerformanceMonitor:
                 f"Profit Factor: {metrics.profit_factor:.2f} (Min: {self.min_profit_factor})\n"
                 f"Positions: {metrics.num_positions} | Trades Today: {metrics.total_trades_today}"
             )
-            
+
             if metrics.alert_level == AlertLevel.RED:
                 logger.error(summary)
             elif metrics.alert_level == AlertLevel.YELLOW:
                 logger.warning(summary)
             else:
                 logger.info(summary)
-                
+
         except Exception as e:
             logger.error(f"Error logging performance summary: {e}")
-    
+
     def should_halt_trading(self, metrics: PerformanceMetrics) -> bool:
         """Determine if trading should be halted based on metrics"""
         # TEMPORARY: More permissive for testing and data collection
@@ -596,7 +595,7 @@ class PerformanceMonitor:
         #     metrics.current_drawdown > self.max_drawdown_limit or
         #     metrics.sharpe_ratio_90d < self.critical_sharpe
         # )
-    
+
     def get_risk_adjustment_factor(self, metrics: PerformanceMetrics) -> float:
         """Get position size adjustment factor based on performance"""
         try:
@@ -606,7 +605,7 @@ class PerformanceMonitor:
                 return 0.75  # Reduce position sizes by 25%
             else:
                 return 1.0  # Full position sizes
-                
+
         except Exception as e:
             logger.error(f"Error calculating risk adjustment factor: {e}")
             return 0.5  # Conservative default
@@ -624,13 +623,13 @@ def get_current_metrics() -> PerformanceMetrics:
     """Get current performance metrics"""
     if performance_monitor is None:
         raise RuntimeError("Performance monitor not initialized")
-    
+
     return performance_monitor.calculate_comprehensive_metrics()
 
 def should_halt_trading() -> bool:
     """Check if trading should be halted"""
     if performance_monitor is None:
         return True
-    
+
     metrics = get_current_metrics()
     return performance_monitor.should_halt_trading(metrics)

@@ -4,9 +4,8 @@
 Analyzes all files in the trading platform and categorizes them for safe cleanup
 """
 
-import os
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Root directory
 root_dir = Path("C:/Users/Marsel/OneDrive/Documents/Cyb/Intraday_Trading")
@@ -16,10 +15,10 @@ CORE_FILES = {
     # Main application
     'alpaca_trading_gateway.py': 'Main FastAPI trading gateway - CRITICAL',
     'simple_health_checker.py': 'Health checker used by gateway - CRITICAL',
-    
+
     # Core trading modules (imported by gateway)
     'volatility_adjusted_position_sizing.py': 'Position sizing module - ACTIVE',
-    'dynamic_stop_loss_manager.py': 'Stop loss management - ACTIVE', 
+    'dynamic_stop_loss_manager.py': 'Stop loss management - ACTIVE',
     'performance_monitor.py': 'Performance tracking - ACTIVE',
     'multi_timeframe_analyzer.py': 'Technical analysis - ACTIVE',
     'advanced_ml_predictor.py': 'ML predictions - ACTIVE',
@@ -27,18 +26,18 @@ CORE_FILES = {
     'adaptive_learning_system.py': 'Learning system - ACTIVE',
     'portfolio_risk_manager.py': 'Risk management - ACTIVE',
     'transaction_cost_model.py': 'Cost analysis - ACTIVE',
-    
-    # Additional core modules  
+
+    # Additional core modules
     'performance_attribution_analyzer.py': 'Performance attribution - ACTIVE',
     'advanced_correlation_modeler.py': 'Correlation analysis - ACTIVE',
-    'advanced_volatility_forecaster.py': 'Volatility forecasting - ACTIVE', 
+    'advanced_volatility_forecaster.py': 'Volatility forecasting - ACTIVE',
     'portfolio_optimization_engine.py': 'Portfolio optimization - ACTIVE',
     'champion_challenger_framework.py': 'Model management - ACTIVE',
     'institutional_model_registry.py': 'Model registry - ACTIVE',
     'institutional_backtest_engine.py': 'Backtesting - ACTIVE',
     'fractional_kelly_module.py': 'Kelly sizing - ACTIVE',
     'vector_kelly_module.py': 'Vector Kelly - ACTIVE',
-    
+
     # Enhanced modules
     'enhanced_cvar_risk_manager.py': 'CVaR risk management - ACTIVE',
     'cvar_integrated_order_router.py': 'Order routing - ACTIVE',
@@ -49,13 +48,13 @@ CORE_FILES = {
     'smart_execution_engine.py': 'Smart execution - ACTIVE',
     'smart_execution_integration.py': 'Execution integration - ACTIVE',
     'stress_testing_module.py': 'Stress testing - ACTIVE',
-    
+
     # Model files - CRITICAL
     'rf_ensemble_v2.pkl': 'Random Forest model - CRITICAL',
-    'xgb_ensemble_v2.pkl': 'XGBoost model - CRITICAL', 
+    'xgb_ensemble_v2.pkl': 'XGBoost model - CRITICAL',
     'lstm_ensemble_best.keras': 'LSTM model - CRITICAL',
     'feature_scaler_v2.gz': 'Feature scaler - CRITICAL',
-    
+
     # Configuration and data
     'requirements.txt': 'Python dependencies - CRITICAL',
     'config/': 'Configuration directory - CRITICAL',
@@ -65,11 +64,11 @@ CORE_FILES = {
     'logs/': 'Logs directory - ACTIVE',
     'models/': 'Models directory - ACTIVE',
     '__pycache__/': 'Python cache - AUTO-GENERATED',
-    
+
     # Database files
     'performance.db': 'Performance database - ACTIVE',
     'performance_metrics.db': 'Metrics database - ACTIVE',
-    
+
     # Current useful startup scripts
     'RESTART_FULL_PLATFORM.bat': 'Current working startup script - KEEP',
 }
@@ -78,7 +77,7 @@ CORE_FILES = {
 CLEANUP_CANDIDATES = {
     # Temporary/generated files
     'dashboard.log': 'Old dashboard log - DELETE',
-    'dashboard_test.html': 'Test file - DELETE', 
+    'dashboard_test.html': 'Test file - DELETE',
     'automated_trading.log': 'Old log - DELETE',
     'autonomous_trading.log': 'Old log - DELETE',
     'system_monitor.log': 'Old log - DELETE',
@@ -89,7 +88,7 @@ CLEANUP_CANDIDATES = {
     'final_signals_test.json': 'Test output - DELETE',
     'health_test.json': 'Test output - DELETE',
     'comprehensive_test_report.json': 'Old test report - DELETE',
-    
+
     # Old/backup model files
     'rf_ensemble_backup_20250806_225036.pkl': 'Old model backup - DELETE',
     'feature_scaler_backup_20250806_225037.gz': 'Old scaler backup - DELETE',
@@ -97,7 +96,7 @@ CLEANUP_CANDIDATES = {
     'rf_fallback.pkl': 'Fallback model - DELETE',
     'rf_fallback_synthetic.pkl': 'Synthetic fallback - DELETE',
     'model_recovery_backup_20250806_224627/': 'Old backup directory - DELETE',
-    
+
     # Test files
     'test_alpaca_connection.py': 'Connection test - DELETE',
     'test_api.py': 'API test - DELETE',
@@ -120,8 +119,8 @@ CLEANUP_CANDIDATES = {
     'simple_model_test.py': 'Model test - DELETE',
     'comprehensive_test.py': 'Comprehensive test - DELETE',
     'mlops_comprehensive_test_suite.py': 'MLOps test - DELETE',
-    
-    # Diagnostic/analysis files  
+
+    # Diagnostic/analysis files
     'analyze_corruption.py': 'Corruption analysis - DELETE',
     'analyze_predictions.py': 'Prediction analysis - DELETE',
     'dashboard_diagnostics.py': 'Diagnostics - DELETE',
@@ -139,7 +138,7 @@ CLEANUP_CANDIDATES = {
     'strategic_completion_summary.py': 'Strategy summary - DELETE',
     'strategic_roadmap_validator.py': 'Roadmap validator - DELETE',
     'version_1_0_audit.py': 'Version audit - DELETE',
-    
+
     # Old startup scripts (replaced by RESTART_FULL_PLATFORM.bat)
     'CLEAN_STARTUP.bat': 'Old startup script - DELETE',
     'CLEAN_VS_CODE_TERMINALS.bat': 'Old terminal script - DELETE',
@@ -156,7 +155,7 @@ CLEANUP_CANDIDATES = {
     'start_automated_trading.bat': 'Old trading start - DELETE',
     'start_platform.bat': 'Old platform start - DELETE',
     'start_react_dashboard.ps1': 'Old dashboard start - DELETE',
-    
+
     # Old/alternative implementations
     'automated_trading_bot.py': 'Old trading bot - DELETE',
     'backend_api_server.py': 'Old backend - DELETE',
@@ -171,7 +170,7 @@ CLEANUP_CANDIDATES = {
     'enhanced_trading_system.py': 'Enhanced system - DELETE',
     'simple_working_model.py': 'Simple model - DELETE',
     'simplified_trading_test.py': 'Simplified test - DELETE',
-    
+
     # Data processing/training (one-time use)
     'alpaca_data_trainer.py': 'Data trainer - DELETE',
     'real_data_model_trainer.py': 'Model trainer - DELETE',
@@ -181,12 +180,12 @@ CLEANUP_CANDIDATES = {
     'patch_ensemble.py': 'Ensemble patch - DELETE',
     'create_performance_db.py': 'DB creation - DELETE',
     'safe_startup_check.py': 'Startup check - DELETE',
-    
+
     # Documentation/reports (historical)
     'system_integrity_report_20250806_230531.json': 'Old report - DELETE',
-    'system_integrity_report_20250806_231557.json': 'Old report - DELETE', 
+    'system_integrity_report_20250806_231557.json': 'Old report - DELETE',
     'system_integrity_report_20250806_234419.json': 'Old report - DELETE',
-    
+
     # Demo/example files
     'demo_backtest.py': 'Demo backtest - DELETE',
     'quick_backtest.py': 'Quick backtest - DELETE',
@@ -196,7 +195,7 @@ CLEANUP_CANDIDATES = {
     'simple_dashboard.html': 'Simple dashboard - DELETE',
     'simple_dashboard/': 'Simple dashboard dir - DELETE',
     'PLATFORM_STATUS.html': 'Status HTML - DELETE',
-    
+
     # Alternative implementations
     'runfile.py': 'Old runfile - DELETE',
     'runfile_clean.py': 'Clean runfile - DELETE',
@@ -207,8 +206,8 @@ CLEANUP_CANDIDATES = {
     'live_trading_deployment.py': 'Deployment script - DELETE',
     'run_microservices_local.py': 'Microservices - DELETE',
     'mlops_system_integrator.py': 'MLOps integrator - DELETE',
-    
-    # Utility scripts (one-time use)  
+
+    # Utility scripts (one-time use)
     'clean_status_check.py': 'Status check - DELETE',
     'platform_status.py': 'Platform status - DELETE',
     'install_backend_deps.py': 'Dependency installer - DELETE',
@@ -221,19 +220,19 @@ CLEANUP_CANDIDATES = {
     'enhanced_logging.py': 'Enhanced logging - DELETE',
     'trading_config.py': 'Trading config - DELETE',
     'dynamic_risk_manager.py': 'Risk manager - DELETE',
-    
+
     # Docker files (not used)
     'docker-compose-simple.yml': 'Docker compose - DELETE',
     'docker-compose-working.yml': 'Docker compose - DELETE',
-    'deploy.ps1': 'Deploy script - DELETE', 
+    'deploy.ps1': 'Deploy script - DELETE',
     'deploy-dashboard.ps1': 'Dashboard deploy - DELETE',
-    
+
     # Crypto integration (separate feature)
     'crypto_integration.py': 'Crypto integration - DELETE',
-    
+
     # Archive directory
     'archive/': 'Archive directory - DELETE',
-    'infrastructure/': 'Infrastructure directory - DELETE',  
+    'infrastructure/': 'Infrastructure directory - DELETE',
     'core/': 'Core directory - DELETE',
     'modules/': 'Modules directory - DELETE',
     'scripts/': 'Scripts directory - DELETE',
@@ -249,10 +248,10 @@ DOCUMENTATION_FILES = {
     'PORT_REFERENCE.md': 'Port reference - REVIEW',
     'PROJECT_CLEANUP_PLAN.md': 'Cleanup plan - DELETE',
     'SENTIMENT_PROVIDER_CONFIGURATION.md': 'Sentiment config - REVIEW',
-    
+
     # Implementation reports
     'ACTIONABLE_IMPLEMENTATION_ROADMAP.md': 'Roadmap - DELETE',
-    'AI_CONSULTANT_IMPLEMENTATION_PLAN.md': 'AI plan - DELETE', 
+    'AI_CONSULTANT_IMPLEMENTATION_PLAN.md': 'AI plan - DELETE',
     'ALPACA_INTEGRATION_COMPLETE.md': 'Integration complete - DELETE',
     'CLEANUP_COMPLETE.md': 'Cleanup complete - DELETE',
     'COMPLETE_SYSTEM_ANALYSIS.md': 'System analysis - DELETE',
@@ -294,14 +293,14 @@ DOCUMENTATION_FILES = {
     'WEEK_3-4_IMPLEMENTATION_PLAN.md': 'Week 3-4 plan - DELETE',
     'WEEK_5_COMPLETION_SUMMARY.md': 'Week 5 summary - DELETE',
     'WEEK_5_UI_UX_IMPLEMENTATION.md': 'Week 5 UI - DELETE',
-    
+
     # Jupyter notebooks
     'LSTM_Trading_Tutorial.ipynb': 'LSTM tutorial - REVIEW',
 }
 
 def generate_cleanup_script():
     """Generate the cleanup script"""
-    
+
     cleanup_script = '''@echo off
 echo 🧹 COMPREHENSIVE PROJECT CLEANUP
 echo ================================
@@ -508,40 +507,40 @@ pause'''
 
 def analyze_project():
     """Analyze the project and create cleanup recommendations"""
-    
+
     print("🔍 COMPREHENSIVE PROJECT CLEANUP ANALYSIS")
     print("=" * 60)
     print(f"Analysis Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
-    
+
     print("📂 CORE FILES (NEVER DELETE):")
     print("-" * 40)
     for file, desc in CORE_FILES.items():
         print(f"✅ {file:<40} - {desc}")
-    
+
     print(f"\\n📄 Total Core Files: {len(CORE_FILES)}")
     print()
-    
+
     print("🧹 CLEANUP CANDIDATES (SAFE TO DELETE):")
     print("-" * 40)
     for file, desc in CLEANUP_CANDIDATES.items():
         print(f"❌ {file:<40} - {desc}")
-    
+
     print(f"\\n🗑️ Total Cleanup Candidates: {len(CLEANUP_CANDIDATES)}")
     print()
-    
+
     print("📖 DOCUMENTATION (REVIEW BEFORE DELETE):")
     print("-" * 40)
     for file, desc in DOCUMENTATION_FILES.items():
         print(f"📋 {file:<40} - {desc}")
-    
+
     print(f"\\n📚 Total Documentation Files: {len(DOCUMENTATION_FILES)}")
     print()
-    
+
     # Calculate cleanup impact
     total_files = len(CORE_FILES) + len(CLEANUP_CANDIDATES) + len(DOCUMENTATION_FILES)
     cleanup_percentage = (len(CLEANUP_CANDIDATES) / total_files) * 100
-    
+
     print("📊 CLEANUP IMPACT ANALYSIS:")
     print("-" * 40)
     print(f"Total Files Analyzed: {total_files}")
@@ -550,7 +549,7 @@ def analyze_project():
     print(f"Files to Review: {len(DOCUMENTATION_FILES)}")
     print(f"Cleanup Percentage: {cleanup_percentage:.1f}%")
     print()
-    
+
     print("🎯 CLEANUP BENEFITS:")
     print("-" * 40)
     print("✅ Remove ~150+ unnecessary files")
@@ -561,7 +560,7 @@ def analyze_project():
     print("✅ Keep working React dashboard and FastAPI gateway")
     print("✅ Maintain all ML models and configuration")
     print()
-    
+
     print("⚠️ SAFETY MEASURES:")
     print("-" * 40)
     print("✅ Backup critical files before cleanup")
@@ -570,7 +569,7 @@ def analyze_project():
     print("✅ Maintain database and model files")
     print("✅ Preserve configuration directory")
     print()
-    
+
     generate_cleanup_script()
     print("📝 Generated: COMPREHENSIVE_CLEANUP.bat")
     print("Run this script to perform the cleanup safely!")

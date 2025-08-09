@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Quick diagnostic to check what features our models expect."""
 
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import joblib
-import numpy as np
 from tensorflow import keras
 
 # Check Random Forest expected features
@@ -14,7 +14,7 @@ print("🔍 Checking Random Forest model...")
 rf_model = joblib.load('rf_ensemble_v2.pkl')
 print(f"RF expects {rf_model.n_features_in_} features")
 
-# Check XGBoost expected features  
+# Check XGBoost expected features
 print("\n🔍 Checking XGBoost model...")
 xgb_model = joblib.load('xgb_ensemble_v2.pkl')
 try:

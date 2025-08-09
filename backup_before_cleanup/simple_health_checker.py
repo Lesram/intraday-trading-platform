@@ -5,14 +5,11 @@ Simple health endpoint fix - replace the broken comprehensive check
 
 import asyncio
 import logging
-import json
-from datetime import datetime
-from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
 class SimpleHealthResponse:
-    def __init__(self, service: str, status: str, response_time: float = 0, details: Dict = None):
+    def __init__(self, service: str, status: str, response_time: float = 0, details: dict = None):
         self.service = service
         self.status = status
         self.response_time = response_time
@@ -21,18 +18,18 @@ class SimpleHealthResponse:
 async def get_simple_system_health():
     """Simplified system health check that actually works"""
     logger.info("📊 Running simplified health check")
-    
+
     health_data = []
-    
+
     # Basic ML Models Check
     try:
         # Try to import the ML predictor
         from advanced_ml_predictor import AdvancedMLPredictor
         predictor = AdvancedMLPredictor()
-        
+
         # Check if models are accessible
         models_loaded = hasattr(predictor, 'lstm_model') and predictor.lstm_model is not None
-        
+
         health_data.append(SimpleHealthResponse(
             service="ML Models",
             status="healthy" if models_loaded else "degraded",
@@ -50,17 +47,16 @@ async def get_simple_system_health():
             response_time=0,
             details={"error": str(e), "using_real_data": False, "models_loaded": 0}
         ))
-    
+
     # Alpaca API Check
     try:
-        import alpaca_trade_api as tradeapi
         import os
-        
+
         # Try to create API connection
         api_key = os.getenv('ALPACA_API_KEY')
         api_secret = os.getenv('ALPACA_SECRET_KEY')
         api_connected = bool(api_key and api_secret)
-        
+
         health_data.append(SimpleHealthResponse(
             service="Alpaca Trading API",
             status="healthy" if api_connected else "offline",
@@ -78,7 +74,7 @@ async def get_simple_system_health():
             response_time=0,
             details={"error": str(e), "api_connection": False}
         ))
-    
+
     # Market Data Pipeline Check
     health_data.append(SimpleHealthResponse(
         service="Market Data Pipeline",
@@ -90,7 +86,7 @@ async def get_simple_system_health():
             "feature_engineering_ok": True
         }
     ))
-    
+
     # System Performance Check
     health_data.append(SimpleHealthResponse(
         service="System Performance",
@@ -102,7 +98,7 @@ async def get_simple_system_health():
             "system_responsive": True
         }
     ))
-    
+
     return health_data
 
 # Convert to dict format for JSON response
@@ -124,5 +120,5 @@ if __name__ == "__main__":
         health = await get_simple_system_health()
         for h in health:
             print(f"{h.service}: {h.status} - {h.details}")
-    
+
     asyncio.run(test())

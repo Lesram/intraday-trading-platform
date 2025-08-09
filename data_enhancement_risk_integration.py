@@ -11,19 +11,18 @@ Features:
 - Advanced analytics dashboard components
 """
 
-import numpy as np
-import pandas as pd
 import logging
 import warnings
-from typing import Dict, List, Tuple, Optional, Any
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-import json
-import os
-from dataclasses import dataclass, asdict
+
+import numpy as np
+import pandas as pd
+
+from enhanced_cvar_risk_manager import integrate_cvar_into_risk_system
 
 # Import our new modules
-from finbert_sentiment_enhancer import FinBERTSentimentAnalyzer, integrate_finbert_into_sentiment_system
-from enhanced_cvar_risk_manager import EnhancedCVaREngine, integrate_cvar_into_risk_system, RiskRegime
+from finbert_sentiment_enhancer import integrate_finbert_into_sentiment_system
 
 warnings.filterwarnings("ignore")
 
@@ -33,23 +32,23 @@ class EnhancedPredictionResult:
     symbol: str
     prediction: float
     confidence: float
-    
+
     # Enhanced sentiment data
-    finbert_sentiment: Dict
+    finbert_sentiment: dict
     sentiment_confidence: float
     sentiment_enhancement_applied: bool
-    
+
     # Advanced risk metrics
-    cvar_metrics: Dict
-    risk_adjusted_position: Dict
-    hedging_recommendations: List[Dict]
+    cvar_metrics: dict
+    risk_adjusted_position: dict
+    hedging_recommendations: list[dict]
     risk_regime: str
-    
+
     # Feature engineering metrics
     feature_count: int
-    feature_importance: Dict
+    feature_importance: dict
     data_quality_score: float
-    
+
     # Meta information
     timestamp: datetime
     analysis_method: str
@@ -62,14 +61,14 @@ class DataEnhancementAndRiskIntegrator:
     Integrates FinBERT sentiment analysis and CVaR risk management
     into the existing trading system for institutional-grade performance.
     """
-    
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        
+
         # Initialize components
         self.finbert_analyzer = None
         self.cvar_engine = None
-        
+
         # Integration status tracking
         self.integration_status = {
             'finbert_available': False,
@@ -77,7 +76,7 @@ class DataEnhancementAndRiskIntegrator:
             'feature_engineering_active': False,
             'real_time_monitoring': False
         }
-        
+
         # Enhanced configuration
         self.enhancement_config = {
             'sentiment_enhancement': {
@@ -109,9 +108,9 @@ class DataEnhancementAndRiskIntegrator:
                 'dashboard_update_frequency': 300  # 5 minutes
             }
         }
-        
+
         self._initialize_integration()
-    
+
     def _initialize_integration(self):
         """Initialize all enhancement components"""
         try:
@@ -120,25 +119,25 @@ class DataEnhancementAndRiskIntegrator:
             self.finbert_analyzer = integrate_finbert_into_sentiment_system()
             self.integration_status['finbert_available'] = True
             self.logger.info("✅ FinBERT sentiment analysis integrated successfully")
-            
+
             # Initialize CVaR risk engine
             self.logger.info("🛡️ Initializing Enhanced CVaR risk management...")
             self.cvar_engine = integrate_cvar_into_risk_system()
             self.integration_status['cvar_enhanced'] = True
             self.logger.info("✅ Enhanced CVaR risk management integrated successfully")
-            
+
             # Initialize feature engineering
             self._initialize_feature_engineering()
-            
+
             # Setup real-time monitoring
             self._initialize_monitoring()
-            
+
             self.logger.info("🚀 Data Enhancement & Risk Management Integration Complete!")
-            
+
         except Exception as e:
             self.logger.error(f"Integration initialization failed: {e}")
             self._setup_fallback_mode()
-    
+
     def _initialize_feature_engineering(self):
         """Initialize automated feature engineering pipeline"""
         try:
@@ -161,16 +160,16 @@ class DataEnhancementAndRiskIntegrator:
                     'correlation_regime', 'volatility_regime', 'liquidity_score'
                 ]
             }
-            
+
             # Feature importance tracking
             self.feature_importance_history = {}
-            
+
             self.integration_status['feature_engineering_active'] = True
             self.logger.info("🔧 Feature engineering pipeline initialized")
-            
+
         except Exception as e:
             self.logger.warning(f"Feature engineering initialization failed: {e}")
-    
+
     def _initialize_monitoring(self):
         """Initialize real-time risk and performance monitoring"""
         try:
@@ -180,18 +179,18 @@ class DataEnhancementAndRiskIntegrator:
                 'sentiment_metrics': ['sentiment_score', 'sentiment_volatility', 'news_flow'],
                 'system_metrics': ['prediction_accuracy', 'model_confidence', 'data_quality']
             }
-            
+
             # Alert history
             self.alert_history = []
-            
+
             self.integration_status['real_time_monitoring'] = True
             self.logger.info("📊 Real-time monitoring system initialized")
-            
+
         except Exception as e:
             self.logger.warning(f"Monitoring system initialization failed: {e}")
-    
-    def get_enhanced_prediction(self, symbol: str, timeframe: str, 
-                              market_data: Dict, current_positions: Dict = None) -> EnhancedPredictionResult:
+
+    def get_enhanced_prediction(self, symbol: str, timeframe: str,
+                              market_data: dict, current_positions: dict = None) -> EnhancedPredictionResult:
         """
         Get enhanced prediction with FinBERT sentiment and CVaR risk analysis
         
@@ -206,24 +205,24 @@ class DataEnhancementAndRiskIntegrator:
         """
         try:
             self.logger.info(f"🚀 Generating enhanced prediction for {symbol}")
-            
+
             # 1. Enhanced Sentiment Analysis
             sentiment_data = self._get_enhanced_sentiment(symbol, market_data)
-            
+
             # 2. Advanced Risk Analysis
             risk_data = self._get_enhanced_risk_analysis(symbol, current_positions or {}, market_data)
-            
+
             # 3. Feature Engineering
             engineered_features = self._engineer_features(symbol, market_data, sentiment_data, risk_data)
-            
+
             # 4. Generate base prediction (using existing system)
             base_prediction = self._get_base_prediction(symbol, timeframe, engineered_features)
-            
+
             # 5. Apply enhancements
             enhanced_prediction = self._apply_enhancements(
                 base_prediction, sentiment_data, risk_data, engineered_features
             )
-            
+
             # 6. Create enhanced result
             result = EnhancedPredictionResult(
                 symbol=symbol,
@@ -243,34 +242,34 @@ class DataEnhancementAndRiskIntegrator:
                 analysis_method='enhanced_finbert_cvar',
                 enhancement_level='institutional_grade'
             )
-            
+
             # 7. Update monitoring
             self._update_monitoring(result)
-            
+
             return result
-            
+
         except Exception as e:
             self.logger.error(f"Enhanced prediction failed for {symbol}: {e}")
             return self._get_fallback_prediction(symbol, timeframe)
-    
-    def _get_enhanced_sentiment(self, symbol: str, market_data: Dict) -> Dict:
+
+    def _get_enhanced_sentiment(self, symbol: str, market_data: dict) -> dict:
         """Get enhanced sentiment analysis with FinBERT"""
         try:
             # Get news articles from market data
             news_articles = market_data.get('news', [])
-            
+
             if self.finbert_analyzer and news_articles:
                 # Use FinBERT for enhanced sentiment
                 finbert_result = self.finbert_analyzer.analyze_news_articles(news_articles, symbol)
-                
+
                 # Enhance with existing sentiment data
                 existing_sentiment = market_data.get('sentiment', {})
                 enhanced_sentiment = self.finbert_analyzer.enhance_existing_sentiment(
-                    existing_sentiment, 
+                    existing_sentiment,
                     ' '.join([art.get('title', '') for art in news_articles[:5]]),
                     symbol
                 )
-                
+
                 return {
                     'score': enhanced_sentiment.get('score', 0.0),
                     'confidence': enhanced_sentiment.get('confidence', 0.5),
@@ -289,30 +288,30 @@ class DataEnhancementAndRiskIntegrator:
                     'finbert_available': False,
                     'enhancement_method': 'keyword_fallback'
                 }
-                
+
         except Exception as e:
             self.logger.warning(f"Enhanced sentiment analysis failed: {e}")
             return {'score': 0.0, 'confidence': 0.1, 'finbert_available': False}
-    
-    def _get_enhanced_risk_analysis(self, symbol: str, positions: Dict, market_data: Dict) -> Dict:
+
+    def _get_enhanced_risk_analysis(self, symbol: str, positions: dict, market_data: dict) -> dict:
         """Get enhanced risk analysis with CVaR"""
         try:
             if self.cvar_engine:
                 # Calculate portfolio CVaR
                 cvar_result = self.cvar_engine.calculate_portfolio_cvar(positions, market_data)
-                
+
                 # Get risk-adjusted position sizing
                 base_position_size = 0.05  # 5% default
                 position_sizing = self.cvar_engine.calculate_risk_adjusted_position_size(
                     symbol, base_position_size, cvar_result, positions
                 )
-                
+
                 # Get hedging recommendations
                 hedging_recs = self.cvar_engine.generate_hedging_recommendations(positions, cvar_result)
-                
+
                 # Run stress tests
                 stress_results = self.cvar_engine.run_stress_tests(positions)
-                
+
                 return {
                     'cvar_metrics': {
                         'var_95': cvar_result.var_95,
@@ -331,12 +330,12 @@ class DataEnhancementAndRiskIntegrator:
             else:
                 # Fallback to basic risk analysis
                 return self._get_basic_risk_analysis(symbol, positions)
-                
+
         except Exception as e:
             self.logger.warning(f"Enhanced risk analysis failed: {e}")
             return self._get_basic_risk_analysis(symbol, positions)
-    
-    def _get_basic_risk_analysis(self, symbol: str, positions: Dict) -> Dict:
+
+    def _get_basic_risk_analysis(self, symbol: str, positions: dict) -> dict:
         """Fallback basic risk analysis"""
         return {
             'cvar_metrics': {
@@ -348,27 +347,27 @@ class DataEnhancementAndRiskIntegrator:
             'risk_regime': 'normal',
             'enhancement_method': 'basic_fallback'
         }
-    
-    def _engineer_features(self, symbol: str, market_data: Dict, 
-                          sentiment_data: Dict, risk_data: Dict) -> Dict:
+
+    def _engineer_features(self, symbol: str, market_data: dict,
+                          sentiment_data: dict, risk_data: dict) -> dict:
         """Engineer features from multiple data sources"""
         try:
             engineered_features = {}
-            
+
             # Technical features
             if 'technical' in market_data:
                 tech_data = market_data['technical']
                 engineered_features.update({
                     f'tech_{k}': v for k, v in tech_data.items()
                 })
-            
+
             # Sentiment features
             engineered_features.update({
                 'sentiment_score': sentiment_data.get('score', 0.0),
                 'sentiment_confidence': sentiment_data.get('confidence', 0.5),
                 'finbert_enhancement': 1.0 if sentiment_data.get('finbert_available') else 0.0
             })
-            
+
             # Risk features
             cvar_metrics = risk_data.get('cvar_metrics', {})
             engineered_features.update({
@@ -376,49 +375,49 @@ class DataEnhancementAndRiskIntegrator:
                 'tail_risk': cvar_metrics.get('tail_expectation', -0.03),
                 'stress_score': cvar_metrics.get('stress_score', 70) / 100
             })
-            
+
             # Feature quality assessment
             quality_score = self._assess_feature_quality(engineered_features)
-            
+
             return {
                 'features': engineered_features,
                 'quality_score': quality_score,
                 'feature_count': len(engineered_features),
                 'engineering_method': 'multi_source_enhanced'
             }
-            
+
         except Exception as e:
             self.logger.warning(f"Feature engineering failed: {e}")
             return {'features': {}, 'quality_score': 0.3, 'feature_count': 0}
-    
-    def _assess_feature_quality(self, features: Dict) -> float:
+
+    def _assess_feature_quality(self, features: dict) -> float:
         """Assess quality of engineered features"""
         try:
             # Count non-zero features
             non_zero_count = sum(1 for v in features.values() if abs(v) > 0.001)
-            
+
             # Check for missing values
             missing_count = sum(1 for v in features.values() if pd.isna(v))
-            
+
             # Calculate quality score
             if len(features) == 0:
                 return 0.0
-            
+
             completeness = (len(features) - missing_count) / len(features)
             richness = non_zero_count / len(features)
-            
+
             return (completeness * 0.7 + richness * 0.3)
-            
+
         except:
             return 0.5
-    
-    def _get_base_prediction(self, symbol: str, timeframe: str, features: Dict) -> Dict:
+
+    def _get_base_prediction(self, symbol: str, timeframe: str, features: dict) -> dict:
         """Get base prediction using existing system (placeholder)"""
         # This would integrate with the existing prediction system
         # For now, using a simple placeholder
-        
+
         feature_values = list(features.get('features', {}).values())
-        
+
         if feature_values:
             # Simple weighted prediction based on features
             prediction = np.tanh(np.mean(feature_values))  # Bounded [-1, 1]
@@ -426,29 +425,29 @@ class DataEnhancementAndRiskIntegrator:
         else:
             prediction = 0.0
             confidence = 0.2
-        
+
         return {
             'prediction': prediction,
             'confidence': confidence,
             'method': 'feature_weighted'
         }
-    
-    def _apply_enhancements(self, base_prediction: Dict, sentiment_data: Dict, 
-                          risk_data: Dict, features: Dict) -> Dict:
+
+    def _apply_enhancements(self, base_prediction: dict, sentiment_data: dict,
+                          risk_data: dict, features: dict) -> dict:
         """Apply enhancements to base prediction"""
-        
+
         base_pred = base_prediction['prediction']
         base_conf = base_prediction['confidence']
-        
+
         # Sentiment enhancement
         sentiment_adjustment = 0.0
         if sentiment_data.get('finbert_available'):
             sentiment_score = sentiment_data['finbert_score']
             sentiment_conf = sentiment_data['finbert_confidence']
-            
+
             if sentiment_conf > 0.6:
                 sentiment_adjustment = sentiment_score * 0.15  # Up to 15% adjustment
-        
+
         # Risk regime adjustment
         risk_regime = risk_data.get('risk_regime', 'normal')
         risk_adjustments = {
@@ -458,20 +457,20 @@ class DataEnhancementAndRiskIntegrator:
             'crisis': 0.6,
             'extreme_stress': 0.4
         }
-        
+
         risk_multiplier = risk_adjustments.get(risk_regime, 1.0)
-        
+
         # Feature quality adjustment
         quality_adjustment = features.get('quality_score', 0.7)
-        
+
         # Apply enhancements
         enhanced_prediction = (base_pred + sentiment_adjustment) * risk_multiplier
         enhanced_confidence = base_conf * quality_adjustment
-        
+
         # Bounds checking
         enhanced_prediction = np.clip(enhanced_prediction, -1.0, 1.0)
         enhanced_confidence = np.clip(enhanced_confidence, 0.1, 0.95)
-        
+
         return {
             'prediction': enhanced_prediction,
             'confidence': enhanced_confidence,
@@ -479,30 +478,30 @@ class DataEnhancementAndRiskIntegrator:
             'risk_multiplier': risk_multiplier,
             'quality_adjustment': quality_adjustment
         }
-    
+
     def _update_monitoring(self, result: EnhancedPredictionResult):
         """Update real-time monitoring with latest results"""
         try:
             # Check for alerts
             alerts = self._check_alert_conditions(result)
-            
+
             # Log alerts
             for alert in alerts:
                 self.logger.warning(f"🚨 ALERT: {alert['type']} - {alert['message']}")
                 self.alert_history.append(alert)
-            
+
             # Keep only recent alerts
             cutoff = datetime.now() - timedelta(hours=24)
             self.alert_history = [a for a in self.alert_history if a['timestamp'] > cutoff]
-            
+
         except Exception as e:
             self.logger.warning(f"Monitoring update failed: {e}")
-    
-    def _check_alert_conditions(self, result: EnhancedPredictionResult) -> List[Dict]:
+
+    def _check_alert_conditions(self, result: EnhancedPredictionResult) -> list[dict]:
         """Check for alert conditions"""
         alerts = []
         thresholds = self.enhancement_config['monitoring']['alert_thresholds']
-        
+
         # High CVaR alert
         if result.cvar_metrics.get('cvar_95', 0) > thresholds['high_cvar']:
             alerts.append({
@@ -511,7 +510,7 @@ class DataEnhancementAndRiskIntegrator:
                 'severity': 'high',
                 'timestamp': datetime.now()
             })
-        
+
         # Extreme sentiment alert
         sentiment_abs = abs(result.finbert_sentiment.get('score', 0))
         if sentiment_abs > thresholds['extreme_sentiment']:
@@ -521,9 +520,9 @@ class DataEnhancementAndRiskIntegrator:
                 'severity': 'medium',
                 'timestamp': datetime.now()
             })
-        
+
         return alerts
-    
+
     def _get_fallback_prediction(self, symbol: str, timeframe: str) -> EnhancedPredictionResult:
         """Generate fallback prediction when enhancements fail"""
         return EnhancedPredictionResult(
@@ -544,16 +543,16 @@ class DataEnhancementAndRiskIntegrator:
             analysis_method='fallback',
             enhancement_level='basic'
         )
-    
+
     def _setup_fallback_mode(self):
         """Setup fallback mode when integration fails"""
         self.logger.warning("⚠️ Setting up fallback mode due to integration failures")
-        
+
         # Reset integration status
         for key in self.integration_status:
             self.integration_status[key] = False
-    
-    def get_integration_status(self) -> Dict:
+
+    def get_integration_status(self) -> dict:
         """Get current integration status and health metrics"""
         return {
             'status': self.integration_status.copy(),
@@ -562,21 +561,21 @@ class DataEnhancementAndRiskIntegrator:
             'enhancement_config': self.enhancement_config,
             'system_health': 'operational' if any(self.integration_status.values()) else 'degraded'
         }
-    
-    def generate_enhancement_report(self, results: List[EnhancedPredictionResult]) -> Dict:
+
+    def generate_enhancement_report(self, results: list[EnhancedPredictionResult]) -> dict:
         """Generate comprehensive enhancement performance report"""
         if not results:
             return {'error': 'No results to analyze'}
-        
+
         try:
             # Performance metrics
             finbert_enhanced = [r for r in results if r.sentiment_enhancement_applied]
             cvar_enhanced = [r for r in results if r.risk_regime != 'normal']
-            
+
             # Calculate improvement metrics
             avg_confidence = np.mean([r.confidence for r in results])
             avg_data_quality = np.mean([r.data_quality_score for r in results])
-            
+
             return {
                 'analysis_period': f"{results[0].timestamp} to {results[-1].timestamp}",
                 'total_predictions': len(results),
@@ -595,7 +594,7 @@ class DataEnhancementAndRiskIntegrator:
                 },
                 'generated_at': datetime.now()
             }
-            
+
         except Exception as e:
             return {'error': f"Report generation failed: {e}"}
 
@@ -605,21 +604,21 @@ data_risk_integrator = None
 def initialize_enhanced_trading_system():
     """Initialize the enhanced trading system with all improvements"""
     global data_risk_integrator
-    
+
     logger = logging.getLogger(__name__)
     logger.info("🚀 Initializing Enhanced Trading System...")
-    
+
     try:
         data_risk_integrator = DataEnhancementAndRiskIntegrator()
-        
+
         status = data_risk_integrator.get_integration_status()
-        logger.info(f"✅ Enhanced Trading System Initialized!")
+        logger.info("✅ Enhanced Trading System Initialized!")
         logger.info(f"📊 System Status: {status['system_health']}")
         logger.info(f"🤖 FinBERT Available: {status['status']['finbert_available']}")
         logger.info(f"🛡️ CVaR Enhanced: {status['status']['cvar_enhanced']}")
-        
+
         return data_risk_integrator
-        
+
     except Exception as e:
         logger.error(f"Enhanced system initialization failed: {e}")
         return None
@@ -628,14 +627,14 @@ def test_enhanced_system():
     """Test the enhanced trading system"""
     print("🚀 Testing Enhanced Data & Risk Management System")
     print("=" * 60)
-    
+
     # Initialize system
     integrator = initialize_enhanced_trading_system()
-    
+
     if not integrator:
         print("❌ System initialization failed")
         return
-    
+
     # Sample data for testing
     sample_market_data = {
         'news': [
@@ -645,14 +644,14 @@ def test_enhanced_system():
         'sentiment': {'score': 0.2, 'confidence': 0.6},
         'technical': {'rsi': 65.0, 'macd': 0.05, 'sma_20': 150.0}
     }
-    
+
     sample_positions = {
         'AAPL': {'market_value': 50000, 'shares': 100}
     }
-    
+
     # Get enhanced prediction
     result = integrator.get_enhanced_prediction('AAPL', '1d', sample_market_data, sample_positions)
-    
+
     print(f"Symbol: {result.symbol}")
     print(f"Enhanced Prediction: {result.prediction:.3f}")
     print(f"Confidence: {result.confidence:.3f}")
@@ -661,7 +660,7 @@ def test_enhanced_system():
     print(f"CVaR (95%): {result.cvar_metrics.get('cvar_95', 0):.2%}")
     print(f"Data Quality Score: {result.data_quality_score:.2f}")
     print(f"Feature Count: {result.feature_count}")
-    
+
     # System status
     status = integrator.get_integration_status()
     print(f"\n📊 System Health: {status['system_health']}")
