@@ -4,8 +4,8 @@
 System health and readiness endpoints
 """
 
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -13,17 +13,17 @@ router = APIRouter()
 
 
 @router.get("/health")
-async def health_check() -> Dict[str, Any]:
+async def health_check() -> dict[str, Any]:
     """Health check endpoint"""
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "service": "intraday-trading-platform"
+        "service": "intraday-trading-platform",
     }
 
 
 @router.get("/ready")
-async def readiness_check() -> Dict[str, Any]:
+async def readiness_check() -> dict[str, Any]:
     """Readiness check endpoint"""
     # TODO: Check dependencies (database, broker, etc.)
     return {
@@ -31,7 +31,7 @@ async def readiness_check() -> Dict[str, Any]:
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "dependencies": {
             "database": "healthy",
-            "broker": "healthy", 
-            "risk_service": "healthy"
-        }
+            "broker": "healthy",
+            "risk_service": "healthy",
+        },
     }

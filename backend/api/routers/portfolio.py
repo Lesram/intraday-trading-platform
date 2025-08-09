@@ -4,8 +4,8 @@
 Portfolio management with authentication
 """
 
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -18,12 +18,12 @@ router = APIRouter()
 
 
 @router.get("/summary")
-async def portfolio_summary(auth_token: RequireAuth) -> Dict[str, Any]:
+async def portfolio_summary(auth_token: RequireAuth) -> dict[str, Any]:
     """
     🔒 Get portfolio summary (AUTHENTICATED)
     """
     logger.info("📊 Authenticated portfolio summary request")
-    
+
     # TODO: Integrate with actual portfolio service
     return {
         "total_value_usd": 125000.0,
@@ -31,17 +31,17 @@ async def portfolio_summary(auth_token: RequireAuth) -> Dict[str, Any]:
         "day_change_usd": 1250.0,
         "day_change_percent": 1.01,
         "positions_count": 8,
-        "updated_at": datetime.now()
+        "updated_at": datetime.now(),
     }
 
 
 @router.get("/performance")
-async def portfolio_performance(auth_token: RequireAuth) -> Dict[str, Any]:
+async def portfolio_performance(auth_token: RequireAuth) -> dict[str, Any]:
     """
     🔒 Get portfolio performance metrics (AUTHENTICATED)
     """
     logger.info("📊 Authenticated portfolio performance request")
-    
+
     # TODO: Integrate with metrics service
     return {
         "daily_pnl_usd": 1250.0,
@@ -50,5 +50,5 @@ async def portfolio_performance(auth_token: RequireAuth) -> Dict[str, Any]:
         "win_rate": 0.68,
         "sharpe_ratio": 1.45,
         "max_drawdown": -0.08,
-        "updated_at": datetime.now()
+        "updated_at": datetime.now(),
     }

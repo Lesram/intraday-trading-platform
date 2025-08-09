@@ -6,22 +6,22 @@ Simplified logging infrastructure for trading platform
 
 import logging
 import sys
-from typing import Any, Dict
 
 # Configure basic logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
 )
+
 
 def get_structured_logger(name: str) -> logging.Logger:
     """
     Get structured logger for module
-    
+
     Args:
         name: Logger name (typically __name__)
-        
+
     Returns:
         Configured logger instance
     """

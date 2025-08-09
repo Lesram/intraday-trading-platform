@@ -30,9 +30,10 @@ async def lifespan(app: FastAPI):
     try:
         # Initialize components
         logger.info("📡 Initializing trading systems...")
-        
+
         # Initialize HTTP client manager
         from infra.http_client import http_manager
+
         await http_manager.initialize()
 
         # Here we would initialize:
@@ -51,9 +52,10 @@ async def lifespan(app: FastAPI):
     finally:
         # Shutdown
         logger.info("🛑 Shutting down trading platform...")
-        
+
         # Close HTTP client
         from infra.http_client import http_manager
+
         await http_manager.close()
 
         # Cleanup:
@@ -86,10 +88,7 @@ def create_app() -> FastAPI:
 
     # 1. Trusted Host Middleware (security)
     if settings.allowed_hosts != ["*"]:
-        app.add_middleware(
-            TrustedHostMiddleware,
-            allowed_hosts=settings.allowed_hosts
-        )
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 
     # 2. CORS Middleware
     app.add_middleware(
@@ -117,7 +116,7 @@ def create_app() -> FastAPI:
             "name": settings.app_name,
             "version": settings.version,
             "environment": settings.environment,
-            "status": "operational"
+            "status": "operational",
         }
 
     # Direct health endpoint for tests (alias to /api/health)
@@ -125,11 +124,12 @@ def create_app() -> FastAPI:
     async def health_check():
         """Direct health check endpoint for tests"""
         from datetime import datetime
+
         return {
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "version": settings.version,
-            "environment": settings.environment
+            "environment": settings.environment,
         }
 
     logger.info(f"📱 FastAPI app created - Environment: {settings.environment}")
